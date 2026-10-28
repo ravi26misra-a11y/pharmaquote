@@ -62,8 +62,8 @@
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased font-sans min-h-screen flex flex-col">
 
-  <!-- TOP APP BAR -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+  <!-- BUYER APP BAR (Hidden completely in Supplier Mode) -->
+  <header id="buyerHeader" class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
@@ -74,47 +74,47 @@
           <div>
             <div class="flex items-center space-x-2">
               <span class="font-extrabold text-lg text-slate-900 tracking-tight">PharmaQuote <span class="text-brand-600">Pure%</span></span>
-              <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-emerald-100 text-emerald-800 border border-emerald-200">B2B Portal</span>
+              <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-emerald-100 text-emerald-800 border border-emerald-200">Admin / Chemist</span>
             </div>
             <p class="text-[11px] text-slate-500 hidden sm:block">Highest Supplier Discounts & Auto-Split Purchase Orders</p>
           </div>
         </div>
 
-        <!-- Role Switcher -->
+        <!-- Action Items -->
         <div class="flex items-center space-x-3">
-          <div id="roleNavContainer" class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200 text-xs font-semibold">
-            <button id="viewBtnBuyer" onclick="switchView('buyer')" class="px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 bg-white text-slate-900 shadow-sm">
-              <i class="fa-solid fa-store text-brand-600"></i>
-              <span>Chemist / Buyer</span>
-            </button>
-            <button id="viewBtnSupplier" onclick="openSupplierSelector()" class="px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-slate-600 hover:text-slate-900">
-              <i class="fa-solid fa-truck-ramp-box text-blue-600"></i>
-              <span id="navSupplierLabel">Supplier Portal</span>
-            </button>
-          </div>
-
-          <!-- Offline Standalone Download -->
-          <button onclick="downloadStandaloneFile()" title="Download Full Application as Single File Backup" class="hidden md:flex items-center space-x-1 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-sm">
-            <i class="fa-solid fa-download"></i>
+          <button onclick="downloadStandaloneFile()" title="Download Backup HTML" class="hidden md:flex items-center space-x-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200">
+            <i class="fa-solid fa-download mr-1"></i>
             <span>Backup App</span>
+          </button>
+          <button onclick="openShareModal()" class="px-4 py-2 bg-gradient-to-r from-brand-600 to-teal-600 hover:from-brand-700 hover:to-teal-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-brand-600/20 flex items-center space-x-2 transition-all">
+            <i class="fa-solid fa-share-nodes"></i>
+            <span>Share RFQ Link</span>
           </button>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- CONFIDENTIAL SUPPLIER TOP BANNER -->
-  <div id="supplierTopBanner" class="bg-blue-600 text-white px-4 py-2.5 text-xs sm:text-sm font-semibold shadow-md hidden">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <div class="flex items-center space-x-2">
-        <i class="fa-solid fa-lock text-emerald-300"></i>
-        <span>Confidential Vendor Portal: <span id="bannerSupplierName" class="font-bold underline">Supplier</span> — Only your discounts are visible.</span>
+  <!-- SUPPLIER DEDICATED HEADER (Shown ONLY in Supplier Mode) -->
+  <header id="supplierHeader" class="bg-blue-700 text-white sticky top-0 z-40 shadow-md hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center font-bold text-white text-base">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-sm sm:text-base leading-tight">Supplier Quotation Portal</h1>
+          <p class="text-[11px] text-blue-200">Quoting as: <span id="hdrSupName" class="font-bold underline text-white">Distributor</span></p>
+        </div>
       </div>
-      <button onclick="exitSupplierMode()" class="px-2.5 py-1 bg-white/20 hover:bg-white/30 rounded text-[11px] font-bold text-white transition-all">
-        Switch to Buyer / Admin
-      </button>
+      <div class="flex items-center space-x-2">
+        <span class="text-[11px] bg-blue-800 text-blue-100 border border-blue-600 px-2.5 py-1 rounded-full flex items-center space-x-1">
+          <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+          <span>100% Confidential</span>
+        </span>
+      </div>
     </div>
-  </div>
+  </header>
 
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 transform transition-all duration-300 translate-y-20 opacity-0 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 border border-slate-700">
@@ -122,11 +122,11 @@
     <span id="toastMsg" class="text-sm font-medium">Notification message</span>
   </div>
 
-  <!-- MAIN VIEW CONTAINER -->
+  <!-- MAIN CONTAINER -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
 
     <!-- ========================================================================= -->
-    <!-- 1. BUYER / CHEMIST PORTAL VIEW                                            -->
+    <!-- 1. BUYER / CHEMIST PORTAL (STRICTLY HIDDEN TO SUPPLIERS)                 -->
     <!-- ========================================================================= -->
     <div id="buyerPortal" class="space-y-6">
 
@@ -158,7 +158,7 @@
           <div>
             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Max Best Discount</p>
             <h3 class="text-2xl font-bold text-emerald-600 mt-1" id="statMaxDiscount">0%</h3>
-            <p class="text-xs text-slate-500 font-semibold mt-1">Highest Single Offer</p>
+            <p class="text-xs text-slate-500 font-semibold mt-1">Highest Offer</p>
           </div>
           <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl">
             <i class="fa-solid fa-trophy"></i>
@@ -169,7 +169,7 @@
           <div>
             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Avg. L1 Discount</p>
             <h3 class="text-2xl font-bold text-indigo-600 mt-1" id="statAvgDiscount">0%</h3>
-            <p class="text-xs text-indigo-500 font-semibold mt-1"><i class="fa-solid fa-arrow-trend-up mr-1"></i>Across Quoted Items</p>
+            <p class="text-xs text-indigo-500 font-semibold mt-1"><i class="fa-solid fa-arrow-trend-up mr-1"></i>Quoted Items</p>
           </div>
           <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl">
             <i class="fa-solid fa-chart-pie"></i>
@@ -177,7 +177,7 @@
         </div>
       </div>
 
-      <!-- Navigation Tabs & Actions -->
+      <!-- Navigation Tabs -->
       <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-3">
         <div class="flex space-x-2 sm:space-x-4">
           <button onclick="switchBuyerTab('requirements')" id="tabBtnReqs" class="px-4 py-2 text-sm font-semibold border-b-2 border-brand-600 text-brand-700 flex items-center space-x-2">
@@ -186,24 +186,16 @@
           </button>
           <button onclick="switchBuyerTab('comparison')" id="tabBtnCompare" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2">
             <i class="fa-solid fa-chart-column"></i>
-            <span>2. Discount Comparison & Best Offer (L1)</span>
+            <span>2. Discount Comparison (L1)</span>
           </button>
           <button onclick="switchBuyerTab('posplit')" id="tabBtnPO" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2">
             <i class="fa-solid fa-file-invoice"></i>
             <span>3. Supplier-wise Split POs</span>
           </button>
         </div>
-
-        <div class="flex items-center space-x-2">
-          <!-- Main Action Button -->
-          <button id="btnOpenShareModal" onclick="openShareModal()" class="px-4 py-2 bg-gradient-to-r from-brand-600 to-teal-600 hover:from-brand-700 hover:to-teal-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-brand-600/20 flex items-center space-x-2 transition-all">
-            <i class="fa-solid fa-share-nodes"></i>
-            <span>Share RFQ Link with Suppliers</span>
-          </button>
-        </div>
       </div>
 
-      <!-- TAB 1: MEDICINE REQUIREMENTS -->
+      <!-- TAB 1: REQUIREMENTS -->
       <div id="buyerTabRequirements" class="space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
           <div class="flex items-center space-x-2 flex-1 max-w-md">
@@ -225,14 +217,9 @@
               <i class="fa-solid fa-file-import"></i>
               <span>Import Supplier Quote</span>
             </button>
-            <button onclick="resetToSampleData()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-medium rounded-lg flex items-center space-x-1" title="Load sample demo data">
-              <i class="fa-solid fa-rotate-left"></i>
-              <span>Demo</span>
-            </button>
           </div>
         </div>
 
-        <!-- Requirements Table with fast pagination for 1,600+ items -->
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
             <table class="w-full text-left text-sm text-slate-600">
@@ -247,9 +234,7 @@
                   <th class="px-4 py-3 text-center">Action</th>
                 </tr>
               </thead>
-              <tbody id="requirementsTableBody" class="divide-y divide-slate-100">
-                <!-- Dynamically populated -->
-              </tbody>
+              <tbody id="requirementsTableBody" class="divide-y divide-slate-100"></tbody>
             </table>
           </div>
           <div id="tablePaginationFooter" class="p-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between">
@@ -263,7 +248,7 @@
         </div>
       </div>
 
-      <!-- TAB 2: PURE DISCOUNT COMPARISON MATRIX -->
+      <!-- TAB 2: COMPARISON MATRIX -->
       <div id="buyerTabComparison" class="space-y-4 hidden">
         <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div class="flex items-center space-x-3">
@@ -288,67 +273,50 @@
                 <tr id="comparisonHeaderRow">
                   <th class="px-4 py-3.5">Medicine & Company</th>
                   <th class="px-4 py-3.5">Pack & Qty</th>
-                  <!-- Suppliers injected dynamically as columns -->
                   <th class="px-4 py-3.5 text-right bg-emerald-950 text-emerald-300 border-l border-emerald-800">Best Discount (L1)</th>
                 </tr>
               </thead>
-              <tbody id="comparisonTableBody" class="divide-y divide-slate-200">
-                <!-- Dynamically populated -->
-              </tbody>
+              <tbody id="comparisonTableBody" class="divide-y divide-slate-200"></tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- TAB 3: SUPPLIER-WISE PURCHASE ORDER (PO) SPLIT -->
+      <!-- TAB 3: SPLIT PURCHASE ORDERS -->
       <div id="buyerTabPOSplit" class="space-y-6 hidden">
         <div>
           <h3 class="text-base font-bold text-slate-900">Supplier-wise Split Purchase Orders</h3>
           <p class="text-xs text-slate-500">Each supplier gets a separate Purchase Order containing only their won items.</p>
         </div>
-        <div id="poSupplierCardsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Dynamically populated PO cards -->
-        </div>
+        <div id="poSupplierCardsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
       </div>
 
     </div>
 
     <!-- ========================================================================= -->
-    <!-- 2. SUPPLIER CONFIDENTIAL PORTAL VIEW                                      -->
+    <!-- 2. SUPPLIER PRIVATE VIEW (100% ISOLATED & CONFIDENTIAL)                   -->
     <!-- ========================================================================= -->
     <div id="supplierPortal" class="space-y-6 hidden">
       <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-          <div class="flex items-center space-x-4">
-            <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-blue-500/20">
-              <i class="fa-solid fa-truck-field"></i>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div class="flex items-center space-x-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl shadow-md shadow-blue-500/20">
+              <i class="fa-solid fa-building-circle-check"></i>
             </div>
             <div>
-              <div class="flex items-center space-x-2">
-                <h2 class="text-xl font-bold text-slate-900" id="supplierPortalName">Distributor Portal</h2>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">Vendor Sheet</span>
-              </div>
-              <p class="text-xs text-slate-500 mt-1">
-                <span>Distributor Portal • RFQ Catalog (<span id="supCatalogCount">0</span> items)</span>
-              </p>
+              <h2 class="text-lg font-bold text-slate-900" id="supplierPortalName">Distributor Portal</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Please quote your maximum discount % for each required medicine below.</p>
             </div>
           </div>
-
-          <!-- Switcher dropdown for testing -->
-          <div class="flex items-center space-x-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
-            <span class="text-xs font-semibold text-slate-500">Simulate Vendor:</span>
-            <select id="supplierSwitcherSelect" onchange="switchSupplierInstance(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-slate-800 focus:outline-none">
-              <!-- Dynamically populated -->
-            </select>
+          <div class="text-right">
+            <span class="text-xs font-semibold text-slate-500 block">Total Requirements:</span>
+            <span class="text-base font-extrabold text-blue-700" id="supCatalogCount">0 Items</span>
           </div>
         </div>
 
-        <div class="mt-4 bg-emerald-50 border border-emerald-200/80 rounded-xl p-3.5 flex items-start space-x-3 text-xs text-emerald-900">
-          <i class="fa-solid fa-shield-halved text-emerald-600 text-base mt-0.5"></i>
-          <div>
-            <span class="font-bold">Strict Privacy Guaranteed:</span>
-            <span> Other competitors' rates and names are completely hidden. Please enter your maximum Discount % for each item. Winning supplier gets the direct order.</span>
-          </div>
+        <div class="mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center space-x-2.5 text-xs text-emerald-900">
+          <i class="fa-solid fa-lock text-emerald-600 text-sm"></i>
+          <span><strong>Confidential Quotation:</strong> Your discounts are private and completely hidden from other distributors.</span>
         </div>
       </div>
 
@@ -356,10 +324,10 @@
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div class="flex items-center space-x-3 flex-1 max-w-sm">
-            <input type="text" id="supplierSearchInput" oninput="renderSupplierPortal()" placeholder="Search items in quotation sheet..." class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <input type="text" id="supplierSearchInput" oninput="renderSupplierPortal()" placeholder="Search medicine in list..." class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
           </div>
           <span class="text-xs font-semibold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
-            <i class="fa-solid fa-check-double mr-1"></i> Auto-saves in real-time
+            <i class="fa-solid fa-check-double mr-1"></i> Auto-saves in browser
           </span>
         </div>
 
@@ -376,24 +344,18 @@
                 <th class="px-4 py-3">Remarks / Note</th>
               </tr>
             </thead>
-            <tbody id="supplierQuoteTableBody" class="divide-y divide-slate-200">
-              <!-- Rendered via JS -->
-            </tbody>
+            <tbody id="supplierQuoteTableBody" class="divide-y divide-slate-200"></tbody>
           </table>
         </div>
 
         <div class="p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div class="text-xs text-slate-500">
-            Total Quoted: <span class="font-bold text-slate-800" id="supSummaryCount">0 / 0</span> Items
+          <div class="text-xs text-slate-600 font-medium">
+            Total Quoted: <span class="font-extrabold text-slate-900" id="supSummaryCount">0 / 0</span> Items
           </div>
           <div class="flex items-center space-x-3">
-            <button onclick="exportSupplierQuoteData()" class="px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl flex items-center space-x-1.5">
-              <i class="fa-solid fa-file-export text-emerald-600"></i>
-              <span>Export Quote File</span>
-            </button>
             <button onclick="sendQuotationViaWhatsApp()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-emerald-600/20 flex items-center space-x-2">
               <i class="fa-brands fa-whatsapp text-base"></i>
-              <span>Send Quotation to Chemist</span>
+              <span>Submit Quotation to Chemist on WhatsApp</span>
             </button>
           </div>
         </div>
@@ -403,7 +365,7 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- MODALS SECTION                                                            -->
+  <!-- MODALS                                                                    -->
   <!-- ========================================================================= -->
 
   <!-- MODAL: SHARE RFQ WITH SUPPLIERS -->
@@ -415,8 +377,8 @@
             <i class="fa-solid fa-share-nodes"></i>
           </div>
           <div>
-            <h3 class="font-bold text-slate-900 text-base">Share RFQ with Suppliers (<span id="modalCatalogCount">0</span> Items)</h3>
-            <p class="text-xs text-slate-500">Share catalog with distributors securely</p>
+            <h3 class="font-bold text-slate-900 text-base">Send RFQ Link to Suppliers (<span id="modalCatalogCount">0</span> Items)</h3>
+            <p class="text-xs text-slate-500">Each supplier gets their own isolated private link with your catalog</p>
           </div>
         </div>
         <button onclick="closeModal('modalShare')" class="text-slate-400 hover:text-slate-600 text-lg w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center">
@@ -425,40 +387,21 @@
       </div>
 
       <div class="py-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-        <!-- Notification for Large Catalog (>150 items) -->
-        <div id="largeCatalogNotice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900">
-          <div class="flex items-start space-x-2">
-            <i class="fa-solid fa-circle-exclamation text-amber-600 text-sm mt-0.5"></i>
-            <div>
-              <p class="font-bold">Large Catalog Notice (<span id="noticeMedCount">0</span> Medicines):</p>
-              <p class="mt-0.5">WhatsApp cannot open links with 1,600+ medicines directly in a single URL string due to character limits. Click <strong>"Download RFQ Catalog File (.json)"</strong> and WhatsApp it to your suppliers. They can open their portal link and import this file in one tap!</p>
-            </div>
-          </div>
-          <div class="mt-2.5 flex items-center space-x-2">
-            <button onclick="downloadRFQCatalogFile()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs flex items-center space-x-1.5 shadow-xs">
-              <i class="fa-solid fa-download"></i>
-              <span>Download RFQ Catalog File for WhatsApp</span>
-            </button>
-          </div>
-        </div>
-
         <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-700">Suppliers / Agencies:</span>
+          <span class="text-xs font-bold text-slate-700">Suppliers:</span>
           <button onclick="addNewSupplierPrompt()" class="text-xs font-bold text-brand-700 hover:text-brand-800 flex items-center space-x-1">
             <i class="fa-solid fa-user-plus"></i>
             <span>+ Add Supplier</span>
           </button>
         </div>
 
-        <div id="supplierLinksList" class="space-y-3">
-          <!-- Dynamically populated -->
-        </div>
+        <div id="supplierLinksList" class="space-y-3"></div>
       </div>
 
       <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-        <p class="text-[11px] text-slate-400 italic">Each supplier gets their own isolated bidding page.</p>
+        <p class="text-[11px] text-slate-400 italic">Suppliers will never see buyer options or competitor bids.</p>
         <button onclick="closeModal('modalShare')" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold">
-          Close
+          Done
         </button>
       </div>
     </div>
@@ -474,7 +417,7 @@
           </div>
           <div>
             <h3 class="font-bold text-slate-900 text-base">Upload Medicine Requirements</h3>
-            <p class="text-xs text-slate-500">Import bulk medicine list from Excel, CSV or copy-paste</p>
+            <p class="text-xs text-slate-500">Import bulk medicine list from Excel or CSV</p>
           </div>
         </div>
         <button onclick="closeModal('modalUpload')" class="text-slate-400 hover:text-slate-600 text-lg w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center">
@@ -483,35 +426,12 @@
       </div>
 
       <div class="py-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-        <div class="flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
-          <button id="uploadTabBtnFile" onclick="toggleUploadTab('file')" class="flex-1 py-1.5 rounded-lg bg-white text-slate-900 shadow-sm flex items-center justify-center space-x-1.5">
-            <i class="fa-solid fa-file-import text-emerald-600"></i>
-            <span>Upload File (.xlsx / .csv / .json)</span>
-          </button>
-          <button id="uploadTabBtnPaste" onclick="toggleUploadTab('paste')" class="flex-1 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 flex items-center justify-center space-x-1.5">
-            <i class="fa-solid fa-paste text-blue-600"></i>
-            <span>Copy-Paste Text</span>
-          </button>
-        </div>
-
-        <div id="uploadBoxFile" class="space-y-3">
-          <div onclick="document.getElementById('excelFileInput').click()" class="border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/50 hover:bg-emerald-50 transition-all rounded-2xl p-6 text-center cursor-pointer">
-            <i class="fa-solid fa-cloud-arrow-up text-3xl text-emerald-600 mb-2"></i>
-            <p class="text-sm font-bold text-slate-800">Click to upload Excel, CSV, or RFQ JSON</p>
-            <p class="text-xs text-slate-500 mt-1">Supports large sheets with 1,600+ medicines</p>
-            <span class="inline-block mt-3 px-3 py-1 bg-white border border-emerald-300 text-emerald-800 font-bold text-xs rounded-lg shadow-2xs">Choose File</span>
-            <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv, .txt, .json" class="hidden" onchange="handleExcelFileSelect(event)">
-          </div>
-        </div>
-
-        <div id="uploadBoxPaste" class="space-y-2 hidden">
-          <label class="block text-xs font-semibold text-slate-700">Paste rows from Excel or Billing Software:</label>
-          <textarea id="pasteTextInput" rows="6" placeholder="Example format:
-Augmentin 625 Duo, GSK, 10 Tabs, 200
-Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
-          <button onclick="parsePastedText()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm">
-            Process Pasted Text
-          </button>
+        <div onclick="document.getElementById('excelFileInput').click()" class="border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/50 hover:bg-emerald-50 transition-all rounded-2xl p-6 text-center cursor-pointer">
+          <i class="fa-solid fa-cloud-arrow-up text-3xl text-emerald-600 mb-2"></i>
+          <p class="text-sm font-bold text-slate-800">Click to upload Excel (.xlsx, .xls) or CSV</p>
+          <p class="text-xs text-slate-500 mt-1">Columns: Medicine Name | Company | Pack Size | Quantity</p>
+          <span class="inline-block mt-3 px-3 py-1 bg-white border border-emerald-300 text-emerald-800 font-bold text-xs rounded-lg shadow-2xs">Select Spreadsheet</span>
+          <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv, .txt" class="hidden" onchange="handleExcelFileSelect(event)">
         </div>
 
         <div id="uploadPreviewContainer" class="hidden space-y-2 border-t border-slate-200 pt-3">
@@ -538,7 +458,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
         <label class="flex items-center space-x-2 text-xs text-slate-600 cursor-pointer">
           <input type="checkbox" id="chkReplaceExisting" checked class="rounded text-emerald-600 focus:ring-emerald-500">
-          <span>Replace existing requirement catalog</span>
+          <span>Replace existing medicine list</span>
         </label>
         <div class="flex space-x-2">
           <button onclick="closeModal('modalUpload')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
@@ -566,12 +486,12 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       <form id="addMedForm" onsubmit="handleSaveMedicine(event)" class="py-4 space-y-3">
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Medicine Name *</label>
-          <input type="text" id="medName" required placeholder="e.g. Augmentin 625 Duo Tablet" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none font-semibold">
+          <input type="text" id="medName" required placeholder="e.g. Augmentin 625 Duo" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none font-semibold">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Company / Mfr</label>
-            <input type="text" id="medCompany" placeholder="e.g. GSK Pharma" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Company</label>
+            <input type="text" id="medCompany" placeholder="e.g. GSK" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none">
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Pack Size</label>
@@ -596,7 +516,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <h3 class="font-bold text-slate-900 text-base flex items-center space-x-2">
           <i class="fa-solid fa-file-import text-blue-600"></i>
-          <span>Import Supplier Quotation</span>
+          <span>Import Supplier WhatsApp Quotation</span>
         </h3>
         <button onclick="closeModal('modalImportQuote')" class="text-slate-400 hover:text-slate-600 text-lg">
           <i class="fa-solid fa-xmark"></i>
@@ -605,15 +525,13 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
 
       <div class="py-4 space-y-3">
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Select Supplier to assign bids to:</label>
-          <select id="importTargetSupplier" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold text-slate-800">
-            <!-- Dynamically populated -->
-          </select>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Select Supplier who sent the quote:</label>
+          <select id="importTargetSupplier" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold text-slate-800"></select>
         </div>
         <p class="text-xs text-slate-600">
-          Paste the supplier's WhatsApp quotation text or quote file below:
+          Paste the supplier's WhatsApp quotation text below:
         </p>
-        <textarea id="importQuoteText" rows="7" placeholder="Paste supplier's WhatsApp quotation text or [PQ-QUOTE:...] code here..." class="w-full text-xs font-mono p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+        <textarea id="importQuoteText" rows="7" placeholder="Paste the message received on WhatsApp here..." class="w-full text-xs font-mono p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
       </div>
 
       <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
@@ -630,7 +548,6 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
   <!-- JAVASCRIPT APPLICATION CORE LOGIC                                         -->
   <!-- ========================================================================= -->
   <script>
-    // --- SANITIZE STRINGS ---
     function sanitizeText(str) {
       if (!str) return "";
       return String(str)
@@ -639,10 +556,9 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
         .trim();
     }
 
-    // --- STORAGE KEYS ---
-    const STORAGE_KEY_REQS = "pharma_discount_reqs_v4";
-    const STORAGE_KEY_SUPS = "pharma_discount_sups_v4";
-    const STORAGE_KEY_QUOTES = "pharma_discount_quotes_v4";
+    const STORAGE_KEY_REQS = "pharma_discount_reqs_v5";
+    const STORAGE_KEY_SUPS = "pharma_discount_sups_v5";
+    const STORAGE_KEY_QUOTES = "pharma_discount_quotes_v5";
 
     const INITIAL_REQUIREMENTS = [
       { id: "med-1", name: "Augmentin 625 Duo Tablet", company: "GSK Pharmaceuticals", pack: "10 Tabs", qty: 250 },
@@ -658,28 +574,16 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       { id: "sup-3", name: "Gujarat Wholesale Chemist", contact: "+91 97120 77889", city: "Vadodara" }
     ];
 
-    const INITIAL_QUOTES = {
-      "sup-1": {
-        "med-1": { disc: 18.5, status: "Available", remarks: "" },
-        "med-2": { disc: 22.0, status: "Available", remarks: "" }
-      },
-      "sup-2": {
-        "med-1": { disc: 20.0, status: "Available", remarks: "" },
-        "med-3": { disc: 14.5, status: "Available", remarks: "" }
-      }
-    };
-
     let requirements = [];
     let suppliers = [];
     let quotes = {};
-    let currentRole = "buyer";
+    let isSupplierMode = false;
     let currentSupplierId = "sup-1";
     let activeBuyerTab = "requirements";
     let pendingUploadList = [];
     let reqCurrentPage = 1;
     const REQ_PAGE_SIZE = 50;
 
-    // --- STATE PERSISTENCE ---
     function loadState() {
       try {
         const storedReqs = localStorage.getItem(STORAGE_KEY_REQS);
@@ -688,11 +592,11 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
 
         requirements = storedReqs ? JSON.parse(storedReqs) : JSON.parse(JSON.stringify(INITIAL_REQUIREMENTS));
         suppliers = storedSups ? JSON.parse(storedSups) : JSON.parse(JSON.stringify(INITIAL_SUPPLIERS));
-        quotes = storedQuotes ? JSON.parse(storedQuotes) : JSON.parse(JSON.stringify(INITIAL_QUOTES));
+        quotes = storedQuotes ? JSON.parse(storedQuotes) : {};
       } catch (e) {
         requirements = JSON.parse(JSON.stringify(INITIAL_REQUIREMENTS));
         suppliers = JSON.parse(JSON.stringify(INITIAL_SUPPLIERS));
-        quotes = JSON.parse(JSON.stringify(INITIAL_QUOTES));
+        quotes = {};
       }
     }
 
@@ -702,11 +606,10 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
         localStorage.setItem(STORAGE_KEY_SUPS, JSON.stringify(suppliers));
         localStorage.setItem(STORAGE_KEY_QUOTES, JSON.stringify(quotes));
       } catch (e) {
-        console.warn("Storage quota warning", e);
+        console.warn("Storage warning", e);
       }
     }
 
-    // --- STANDALONE OFFLINE APP EXPORTER ---
     function downloadStandaloneFile() {
       try {
         const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
@@ -721,25 +624,21 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
         }, 100);
-        showToast("Application downloaded. Run offline anytime!");
+        showToast("Application backup downloaded!");
       } catch (err) {
-        showToast("Failed to save. Press Ctrl+S to save.", "error");
+        showToast("Failed to save.", "error");
       }
     }
 
-    // --- TOAST NOTIFICATION ---
     function showToast(msg, type = "success") {
       const toast = document.getElementById("toast");
       const icon = document.getElementById("toastIcon");
       const toastMsg = document.getElementById("toastMsg");
-
       if (!toast || !icon || !toastMsg) return;
 
       toastMsg.innerText = msg;
       if (type === "error") {
         icon.className = "fa-solid fa-circle-exclamation text-rose-400 text-lg";
-      } else if (type === "info") {
-        icon.className = "fa-solid fa-circle-info text-blue-400 text-lg";
       } else {
         icon.className = "fa-solid fa-circle-check text-emerald-400 text-lg";
       }
@@ -750,58 +649,35 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       }, 3000);
     }
 
-    // --- UI VIEW SWITCHER ---
-    function switchView(role, supplierId = null) {
-      currentRole = role;
-      const buyerPortal = document.getElementById("buyerPortal");
-      const supplierPortal = document.getElementById("supplierPortal");
-      const supplierBanner = document.getElementById("supplierTopBanner");
-      const viewBtnBuyer = document.getElementById("viewBtnBuyer");
-      const viewBtnSupplier = document.getElementById("viewBtnSupplier");
-
-      if (role === "buyer") {
-        buyerPortal.classList.remove("hidden");
-        supplierPortal.classList.add("hidden");
-        supplierBanner.classList.add("hidden");
-        document.getElementById("navSupplierLabel").innerText = "Supplier Portal";
-
-        viewBtnBuyer.className = "px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 bg-white text-slate-900 shadow-sm";
-        viewBtnSupplier.className = "px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-slate-600 hover:text-slate-900";
-        renderBuyerDashboard();
-      } else {
-        if (supplierId) currentSupplierId = supplierId;
-        const sup = suppliers.find(s => s.id === currentSupplierId) || suppliers[0];
-        if (sup) {
-          currentSupplierId = sup.id;
-          document.getElementById("bannerSupplierName").innerText = sup.name;
-          document.getElementById("navSupplierLabel").innerText = sup.name.split(" ")[0];
-        }
-
-        buyerPortal.classList.add("hidden");
-        supplierPortal.classList.remove("hidden");
-        supplierBanner.classList.remove("hidden");
-
-        viewBtnSupplier.className = "px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 bg-blue-600 text-white shadow-sm";
-        viewBtnBuyer.className = "px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-slate-600 hover:text-slate-900";
-        renderSupplierPortal();
-      }
-    }
-
-    function exitSupplierMode() {
-      switchView("buyer");
-    }
-
-    function openSupplierSelector() {
-      switchView("supplier", currentSupplierId);
-    }
-
-    function switchSupplierInstance(supId) {
+    // --- LOCKDOWN SUPPLIER VIEW (Zero Buyer Access) ---
+    function enforceSupplierLockdown(supId, supName) {
+      isSupplierMode = true;
       currentSupplierId = supId;
+
+      // Completely remove/hide Buyer Elements
+      const buyerHeader = document.getElementById("buyerHeader");
+      const buyerPortal = document.getElementById("buyerPortal");
+      if (buyerHeader) buyerHeader.remove(); // Remove from DOM for security
+      if (buyerPortal) buyerPortal.remove(); // Remove from DOM for security
+
+      // Show Supplier Elements
+      const supplierHeader = document.getElementById("supplierHeader");
+      const supplierPortal = document.getElementById("supplierPortal");
+      supplierHeader.classList.remove("hidden");
+      supplierPortal.classList.remove("hidden");
+
+      document.getElementById("hdrSupName").innerText = supName || "Distributor";
+      document.getElementById("supplierPortalName").innerText = supName || "Distributor Portal";
+
       renderSupplierPortal();
-      showToast(`Quotation sheet loaded for: ${suppliers.find(s => s.id === supId)?.name}`);
     }
 
-    // --- BUYER TABS ---
+    function switchView(role) {
+      if (isSupplierMode) return; // Strict lock
+      renderBuyerDashboard();
+    }
+
+    // --- TAB SWITCHER FOR BUYER ---
     function switchBuyerTab(tabName) {
       activeBuyerTab = tabName;
       const tabReq = document.getElementById("buyerTabRequirements");
@@ -832,8 +708,9 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       }
     }
 
-    // --- STATS CALCULATION ---
     function renderBuyerDashboard() {
+      if (isSupplierMode) return;
+
       document.getElementById("statTotalItems").innerText = requirements.length;
       document.getElementById("tabCountReq").innerText = requirements.length;
 
@@ -876,9 +753,9 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       }
     }
 
-    // --- TAB 1: REQUIREMENTS TABLE WITH PAGINATION FOR 1,600+ ITEMS ---
     function renderRequirementsTable(query = "") {
       const tbody = document.getElementById("requirementsTableBody");
+      if (!tbody) return;
       tbody.innerHTML = "";
 
       const qStr = query.toLowerCase().trim();
@@ -909,7 +786,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
           <tr>
             <td colspan="7" class="text-center py-10 text-slate-400">
               <i class="fa-solid fa-box-open text-3xl mb-2 block"></i>
-              No medicine requirements found. Click "Upload Excel / CSV" to import catalog.
+              No medicine requirements found. Click "Upload Excel / CSV" to import your list.
             </td>
           </tr>
         `;
@@ -971,13 +848,13 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       });
       saveState();
       renderBuyerDashboard();
-      showToast("Medicine removed", "info");
+      showToast("Medicine removed");
     }
 
-    // --- TAB 2: PURE DISCOUNT COMPARATIVE MATRIX ---
     function renderComparisonMatrix() {
       const headerRow = document.getElementById("comparisonHeaderRow");
       const tbody = document.getElementById("comparisonTableBody");
+      if (!headerRow || !tbody) return;
 
       let headersHtml = `
         <th class="px-4 py-3.5">Medicine & Company</th>
@@ -998,10 +875,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
 
       tbody.innerHTML = "";
 
-      // Render first 200 items in comparison matrix to keep browser buttery smooth
-      const displayItems = requirements.slice(0, 200);
-
-      displayItems.forEach(med => {
+      requirements.forEach(med => {
         let maxDisc = -1;
         let bestSupplierId = null;
 
@@ -1042,9 +916,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
             `;
           } else {
             html += `
-              <td class="px-4 py-3 text-center border-l border-slate-200 text-xs text-slate-400 italic">
-                --
-              </td>
+              <td class="px-4 py-3 text-center border-l border-slate-200 text-xs text-slate-400 italic">--</td>
             `;
           }
         });
@@ -1059,9 +931,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
           `;
         } else {
           html += `
-            <td class="px-4 py-3 text-right border-l border-slate-200 text-slate-400 text-xs italic">
-              Pending
-            </td>
+            <td class="px-4 py-3 text-right border-l border-slate-200 text-slate-400 text-xs italic">Pending</td>
           `;
         }
 
@@ -1070,9 +940,9 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       });
     }
 
-    // --- TAB 3: SPLIT PURCHASE ORDERS ---
     function renderPOSplitSection() {
       const container = document.getElementById("poSupplierCardsContainer");
+      if (!container) return;
       container.innerHTML = "";
 
       suppliers.forEach(sup => {
@@ -1092,10 +962,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
 
           if (bestSupId === sup.id && highestDisc > 0) {
             const q = quotes[sup.id][med.id];
-            winningItems.push({
-              med,
-              discount: q.disc
-            });
+            winningItems.push({ med, discount: q.disc });
           }
         });
 
@@ -1109,7 +976,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
           itemsHtml = `
             <div class="p-8 text-center text-slate-400 text-xs">
               <i class="fa-solid fa-triangle-exclamation text-2xl mb-1 text-slate-300 block"></i>
-              No items won by this distributor at current discount offers.
+              No items won by this distributor.
             </div>
           `;
         } else {
@@ -1166,7 +1033,6 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       });
     }
 
-    // --- WHATSAPP ORDER FORMATTER ---
     function copyPOWhatsAppText(supplierId, poNumber) {
       const sup = suppliers.find(s => s.id === supplierId);
       const winningItems = [];
@@ -1188,7 +1054,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       });
 
       if (winningItems.length === 0) {
-        showToast("No winning items for this supplier", "info");
+        showToast("No winning items for this supplier");
         return;
       }
 
@@ -1201,15 +1067,14 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       winningItems.forEach((item, idx) => {
         text += `${idx + 1}. *${item.med.name}*\n`;
         text += `   - Pack: ${item.med.pack} | *Order Qty: ${item.med.qty}*\n`;
-        text += `   - *Final Approved Discount: ${item.discount.toFixed(1)}%*\n\n`;
+        text += `   - *Approved Discount: ${item.discount.toFixed(1)}%*\n\n`;
       });
 
-      text += `_Please confirm dispatch and send challan._`;
+      text += `_Please confirm dispatch and bill._`;
       copyToClipboard(text);
       showToast("WhatsApp purchase order copied!");
     }
 
-    // --- PRINT PURCHASE ORDER SLIP ---
     function printPO(supplierId, poNumber) {
       const sup = suppliers.find(s => s.id === supplierId);
       const winningItems = [];
@@ -1274,30 +1139,21 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       window.print();
     }
 
-    // --- SUPPLIER PORTAL RENDERING ---
+    // --- RENDER SUPPLIER PRIVATE QUOTATION SHEET ---
     function renderSupplierPortal() {
-      const curSup = suppliers.find(s => s.id === currentSupplierId) || suppliers[0];
-      if (!curSup) return;
-
-      document.getElementById("supplierPortalName").innerText = curSup.name;
-      document.getElementById("supCatalogCount").innerText = requirements.length;
-
-      const select = document.getElementById("supplierSwitcherSelect");
-      select.innerHTML = suppliers.map(s => `
-        <option value="${s.id}" ${s.id === currentSupplierId ? 'selected' : ''}>${s.name}</option>
-      `).join('');
+      document.getElementById("supCatalogCount").innerText = `${requirements.length} Items`;
 
       const tbody = document.getElementById("supplierQuoteTableBody");
       tbody.innerHTML = "";
 
       const filterVal = (document.getElementById("supplierSearchInput")?.value || "").toLowerCase().trim();
-      const filteredReqs = requirements.filter(m => (m.name || "").toLowerCase().includes(filterVal) || (m.company || "").toLowerCase().includes(filterVal));
-
-      // Display up to 300 rows at once in supplier view for smooth scrolling
-      const displaySlice = filteredReqs.slice(0, 300);
+      const filteredReqs = requirements.filter(m => 
+        (m.name || "").toLowerCase().includes(filterVal) || 
+        (m.company || "").toLowerCase().includes(filterVal)
+      );
 
       let quotedCount = 0;
-      displaySlice.forEach((med, idx) => {
+      filteredReqs.forEach((med, idx) => {
         const supQuotes = quotes[currentSupplierId] = quotes[currentSupplierId] || {};
         const q = supQuotes[med.id] || { disc: 0, status: "Available", remarks: "" };
 
@@ -1315,7 +1171,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
           <td class="px-4 py-3 text-center font-bold text-slate-800">${med.qty}</td>
           <td class="px-4 py-3">
             <div class="relative w-28">
-              <input type="number" step="0.1" value="${q.disc > 0 ? q.disc : ''}" oninput="updateSupplierQuote('${med.id}', 'disc', this.value)" placeholder="0.0" class="w-full pl-2.5 pr-6 py-1.5 text-xs font-bold text-emerald-700 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <input type="number" step="0.1" value="${q.disc > 0 ? q.disc : ''}" oninput="updateSupplierQuote('${med.id}', 'disc', this.value)" placeholder="0.0" class="w-full pl-2.5 pr-6 py-1.5 text-xs font-bold text-blue-700 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
               <span class="absolute right-2 top-2 text-xs font-bold text-slate-400">%</span>
             </div>
           </td>
@@ -1352,25 +1208,21 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       document.getElementById("supSummaryCount").innerText = `${count} / ${requirements.length}`;
     }
 
-    // --- SUPPLIER WHATSAPP QUOTATION SENDER ---
     function sendQuotationViaWhatsApp() {
-      const curSup = suppliers.find(s => s.id === currentSupplierId);
+      const curSup = suppliers.find(s => s.id === currentSupplierId) || { name: "Distributor", id: currentSupplierId };
       const supQuotes = quotes[currentSupplierId] || {};
 
-      let hasQuote = false;
       let quoteCount = 0;
-
       const compactQuotes = {};
       requirements.forEach(med => {
         const q = supQuotes[med.id];
         if (q && q.disc > 0) {
-          hasQuote = true;
           quoteCount++;
           compactQuotes[med.id] = q;
         }
       });
 
-      if (!hasQuote) {
+      if (quoteCount === 0) {
         showToast("Please enter a discount for at least one item", "error");
         return;
       }
@@ -1381,138 +1233,69 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
         quotes: compactQuotes
       };
 
-      const syncToken = window.LZString 
-        ? `[PQ-LZ:${LZString.compressToEncodedURIComponent(JSON.stringify(payload))}]`
-        : `[PQ-QUOTE:${btoa(unescape(encodeURIComponent(JSON.stringify(payload))))}]`;
+      const syncToken = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
 
       let msg = `*DISCOUNT QUOTATION FROM ${curSup.name.toUpperCase()}*\n`;
-      msg += `Total Medicines Quoted: *${quoteCount} Items*\n`;
+      msg += `Medicines Quoted: *${quoteCount} Items*\n`;
       msg += `Date: ${new Date().toLocaleDateString('en-IN')}\n\n`;
-      msg += `*VERIFIED QUOTE SYNC CODE:*\n${syncToken}\n\n`;
-      msg += `_Paste this code into PharmaQuote to import my discounts instantly._`;
+      msg += `*VERIFIED QUOTE SYNC CODE:*\n[PQ-LZ:${syncToken}]\n\n`;
+      msg += `_Chemist please copy and paste this sync code into PharmaQuote._`;
 
       const encoded = encodeURIComponent(msg);
       window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
       showToast("WhatsApp message prepared!");
     }
 
-    function exportSupplierQuoteData() {
-      const curSup = suppliers.find(s => s.id === currentSupplierId);
-      const payload = {
-        supplier: curSup,
-        quotes: quotes[currentSupplierId] || {}
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${curSup.name.replace(/\s+/g, '_')}_Quotes.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      showToast("Quote file exported successfully!");
-    }
-
-    // --- SHARE MODAL HANDLER ---
+    // --- SHARE RFQ MODAL ---
     function openShareModal() {
-      try {
-        const container = document.getElementById("supplierLinksList");
-        document.getElementById("modalCatalogCount").innerText = requirements.length;
-        container.innerHTML = "";
+      const container = document.getElementById("supplierLinksList");
+      document.getElementById("modalCatalogCount").innerText = requirements.length;
+      container.innerHTML = "";
 
-        const largeNotice = document.getElementById("largeCatalogNotice");
-        if (requirements.length > 150) {
-          document.getElementById("noticeMedCount").innerText = requirements.length;
-          largeNotice.classList.remove("hidden");
-        } else {
-          largeNotice.classList.add("hidden");
-        }
+      const currentBaseUrl = window.location.origin + window.location.pathname;
 
-        const currentBaseUrl = window.location.origin + window.location.pathname;
+      suppliers.forEach(sup => {
+        // Embed the supplier identity AND the medicine catalog into the URL payload
+        const payload = {
+          sId: sup.id,
+          sName: sup.name,
+          r: requirements.map(r => [r.id, r.name, r.company, r.pack, r.qty])
+        };
+        const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
+        const supplierDirectLink = `${currentBaseUrl}#rfq=${compressed}`;
 
-        suppliers.forEach(sup => {
-          let directLink = "";
-          
-          // Under 150 items can be packed directly into the URL
-          if (requirements.length <= 150) {
-            const payload = {
-              s: sup.id,
-              r: requirements.map(r => [r.id, r.name, r.company, r.pack, r.qty])
-            };
-            const jsonStr = JSON.stringify(payload);
-            const compressed = LZString.compressToEncodedURIComponent(jsonStr);
-            directLink = `${currentBaseUrl}#lz=${compressed}`;
-          } else {
-            // Large catalog link directs to supplier's isolated session
-            directLink = `${currentBaseUrl}#sup=${sup.id}`;
-          }
+        const whatsappMsg = `Hello ${sup.name},\n\nPlease enter your best Discount % for our current medicine requirements (${requirements.length} items).\n\nClick here to quote directly:\n${supplierDirectLink}\n\n(Note: Your rates remain 100% confidential).`;
+        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMsg)}`;
 
-          const whatsappMsg = `Hello ${sup.name},\n\nPlease enter your best Discount % for our current medicine requirements (${requirements.length} items).\n\nOpen your portal here:\n${directLink}\n\n(Competitor rates remain strictly confidential).`;
-          const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMsg)}`;
-
-          const item = document.createElement("div");
-          item.className = "p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2";
-          item.innerHTML = `
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-2">
-                <span class="font-bold text-slate-900 text-sm">${sup.name}</span>
-                <span class="text-xs text-slate-500 font-mono">(${sup.city})</span>
-              </div>
-              <div class="flex items-center space-x-1.5">
-                <a href="${whatsappUrl}" target="_blank" class="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-md border border-emerald-200 flex items-center space-x-1">
-                  <i class="fa-brands fa-whatsapp text-sm text-emerald-600"></i>
-                  <span>WhatsApp</span>
-                </a>
-                <button onclick="simulateOpenSupplier('${sup.id}')" class="text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 flex items-center space-x-1">
-                  <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                  <span>Open Portal</span>
-                </button>
-              </div>
+        const item = document.createElement("div");
+        item.className = "p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2";
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-bold text-slate-900 text-sm">${sup.name}</span>
+              <span class="text-xs text-slate-500 font-mono ml-1">(${sup.city})</span>
             </div>
-            <div class="flex items-center space-x-2">
-              <input type="text" readonly value="${directLink}" class="w-full bg-white border border-slate-300 text-slate-600 text-xs px-2.5 py-1.5 rounded-lg font-mono focus:outline-none select-all">
-              <button onclick="copyToClipboard('${directLink}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center space-x-1">
-                <i class="fa-regular fa-copy"></i>
-                <span>Copy</span>
-              </button>
-            </div>
-          `;
-          container.appendChild(item);
-        });
+            <a href="${whatsappUrl}" target="_blank" class="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-md border border-emerald-200 flex items-center space-x-1">
+              <i class="fa-brands fa-whatsapp text-sm text-emerald-600"></i>
+              <span>WhatsApp</span>
+            </a>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="text" readonly value="${supplierDirectLink}" class="w-full bg-white border border-slate-300 text-slate-600 text-xs px-2.5 py-1.5 rounded-lg font-mono focus:outline-none select-all">
+            <button onclick="copyToClipboard('${supplierDirectLink}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center space-x-1">
+              <i class="fa-regular fa-copy"></i>
+              <span>Copy</span>
+            </button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
 
-        document.getElementById("modalShare").classList.remove("hidden");
-      } catch (err) {
-        console.error("Share modal error:", err);
-        showToast("Error opening share modal", "error");
-      }
-    }
-
-    function downloadRFQCatalogFile() {
-      const data = {
-        type: "PHARMA_RFQ_CATALOG",
-        created: new Date().toISOString(),
-        totalItems: requirements.length,
-        medicines: requirements
-      };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `PharmaQuote_RFQ_${requirements.length}_Items.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      showToast("RFQ Catalog downloaded! Share this file on WhatsApp with suppliers.");
-    }
-
-    function simulateOpenSupplier(supId) {
-      closeModal("modalShare");
-      switchView("supplier", supId);
-      showToast(`Switched to: ${suppliers.find(s => s.id === supId)?.name}`);
+      document.getElementById("modalShare").classList.remove("hidden");
     }
 
     function addNewSupplierPrompt() {
-      const name = prompt("Enter Supplier / Agency Name:");
+      const name = prompt("Enter Supplier Name:");
       if (!name) return;
       const contact = prompt("Enter WhatsApp Number:") || "+91 98000 00000";
       const city = prompt("Enter City / Area:") || "Ahmedabad";
@@ -1525,62 +1308,19 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       showToast(`Supplier ${name} added!`);
     }
 
-    // --- UPLOAD EXCEL / CSV ENGINE ---
+    // --- UPLOAD EXCEL / CSV ---
     function openUploadModal() {
       pendingUploadList = [];
       document.getElementById("uploadPreviewContainer").classList.add("hidden");
       document.getElementById("btnConfirmImport").disabled = true;
       document.getElementById("excelFileInput").value = "";
-      document.getElementById("pasteTextInput").value = "";
-      toggleUploadTab('file');
       document.getElementById("modalUpload").classList.remove("hidden");
-    }
-
-    function toggleUploadTab(tab) {
-      const boxFile = document.getElementById("uploadBoxFile");
-      const boxPaste = document.getElementById("uploadBoxPaste");
-      const btnFile = document.getElementById("uploadTabBtnFile");
-      const btnPaste = document.getElementById("uploadTabBtnPaste");
-
-      if (tab === 'file') {
-        boxFile.classList.remove("hidden");
-        boxPaste.classList.add("hidden");
-        btnFile.className = "flex-1 py-1.5 rounded-lg bg-white text-slate-900 shadow-sm flex items-center justify-center space-x-1.5";
-        btnPaste.className = "flex-1 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 flex items-center justify-center space-x-1.5";
-      } else {
-        boxFile.classList.add("hidden");
-        boxPaste.classList.remove("hidden");
-        btnPaste.className = "flex-1 py-1.5 rounded-lg bg-white text-slate-900 shadow-sm flex items-center justify-center space-x-1.5";
-        btnFile.className = "flex-1 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 flex items-center justify-center space-x-1.5";
-      }
     }
 
     function handleExcelFileSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
 
-      // Handle JSON Catalog uploads directly
-      if (file.name.endsWith('.json')) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          try {
-            const data = JSON.parse(evt.target.result);
-            if (data.medicines && Array.isArray(data.medicines)) {
-              pendingUploadList = data.medicines;
-              displayUploadPreview();
-            } else if (Array.isArray(data)) {
-              pendingUploadList = data;
-              displayUploadPreview();
-            }
-          } catch (err) {
-            showToast("Invalid JSON catalog file", "error");
-          }
-        };
-        reader.readAsText(file);
-        return;
-      }
-
-      // Handle Excel & CSV files with SheetJS
       const reader = new FileReader();
       reader.onload = function(evt) {
         try {
@@ -1590,35 +1330,14 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
           const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
           processParsedRawRows(jsonData);
         } catch (err) {
-          console.error(err);
-          showToast("Failed to parse file. Ensure it is a valid Excel/CSV.", "error");
+          showToast("Failed to parse file. Use valid Excel/CSV.", "error");
         }
       };
       reader.readAsArrayBuffer(file);
     }
 
-    function parsePastedText() {
-      const text = document.getElementById("pasteTextInput").value.trim();
-      if (!text) {
-        showToast("Please paste rows first", "info");
-        return;
-      }
-
-      const rows = text.split('\n').map(r => {
-        if (r.includes('\t')) return r.split('\t');
-        if (r.includes(',')) return r.split(',');
-        if (r.includes('|')) return r.split('|');
-        return [r];
-      });
-
-      processParsedRawRows(rows);
-    }
-
     function processParsedRawRows(rows) {
-      if (!rows || rows.length === 0) {
-        showToast("No data found", "error");
-        return;
-      }
+      if (!rows || rows.length === 0) return;
 
       pendingUploadList = [];
       let startIdx = 0;
@@ -1649,31 +1368,22 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
         });
       }
 
-      displayUploadPreview();
-    }
+      if (pendingUploadList.length > 0) {
+        document.getElementById("parsedItemsCount").innerText = pendingUploadList.length;
+        const tbody = document.getElementById("uploadPreviewTbody");
+        tbody.innerHTML = pendingUploadList.slice(0, 30).map(m => `
+          <tr class="hover:bg-slate-50">
+            <td class="p-2 font-bold text-slate-800">${m.name}</td>
+            <td class="p-2 text-slate-600">${m.company}</td>
+            <td class="p-2 text-slate-600">${m.pack}</td>
+            <td class="p-2 text-center font-bold text-slate-900">${m.qty}</td>
+          </tr>
+        `).join('');
 
-    function displayUploadPreview() {
-      if (pendingUploadList.length === 0) {
-        showToast("No valid medicines detected", "error");
-        return;
+        document.getElementById("uploadPreviewContainer").classList.remove("hidden");
+        document.getElementById("btnConfirmImport").disabled = false;
+        showToast(`${pendingUploadList.length} medicines parsed!`);
       }
-
-      const previewContainer = document.getElementById("uploadPreviewContainer");
-      const previewTbody = document.getElementById("uploadPreviewTbody");
-      document.getElementById("parsedItemsCount").innerText = pendingUploadList.length;
-
-      previewTbody.innerHTML = pendingUploadList.slice(0, 30).map(m => `
-        <tr class="hover:bg-slate-50">
-          <td class="p-2 font-bold text-slate-800">${m.name}</td>
-          <td class="p-2 text-slate-600">${m.company}</td>
-          <td class="p-2 text-slate-600">${m.pack}</td>
-          <td class="p-2 text-center font-bold text-slate-900">${m.qty}</td>
-        </tr>
-      `).join('');
-
-      previewContainer.classList.remove("hidden");
-      document.getElementById("btnConfirmImport").disabled = false;
-      showToast(`${pendingUploadList.length} medicines parsed!`);
     }
 
     function confirmImportMedicines() {
@@ -1694,7 +1404,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       showToast(`Loaded ${pendingUploadList.length} medicines into RFQ!`);
     }
 
-    // --- IMPORT SUPPLIER QUOTE MODAL ---
+    // --- IMPORT SUPPLIER WHATSAPP QUOTATION ---
     function openImportQuoteModal() {
       const select = document.getElementById("importTargetSupplier");
       select.innerHTML = suppliers.map(s => `
@@ -1707,12 +1417,8 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
     function processImportedQuote() {
       const targetSupId = document.getElementById("importTargetSupplier").value;
       const rawText = document.getElementById("importQuoteText").value.trim();
-      if (!rawText) {
-        showToast("Please paste quotation text", "info");
-        return;
-      }
+      if (!rawText) return;
 
-      // Check for compressed token [PQ-LZ:...]
       const lzMatch = rawText.match(/\[PQ-LZ:([A-Za-z0-9+/=_-]+)\]/);
       if (lzMatch && lzMatch[1]) {
         try {
@@ -1723,7 +1429,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
             saveState();
             closeModal("modalImportQuote");
             renderBuyerDashboard();
-            showToast("Imported quotes via verified sync code!");
+            showToast("Imported quotation successfully!");
             return;
           }
         } catch (e) {
@@ -1731,60 +1437,7 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
         }
       }
 
-      // Regular token [PQ-QUOTE:...]
-      const quoteMatch = rawText.match(/\[PQ-QUOTE:([A-Za-z0-9+/=]+)\]/);
-      if (quoteMatch && quoteMatch[1]) {
-        try {
-          const jsonStr = decodeURIComponent(escape(atob(quoteMatch[1])));
-          const data = JSON.parse(jsonStr);
-          if (data.quotes) {
-            quotes[targetSupId] = { ...(quotes[targetSupId] || {}), ...data.quotes };
-            saveState();
-            closeModal("modalImportQuote");
-            renderBuyerDashboard();
-            showToast("Imported quotes successfully!");
-            return;
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      // Natural language line-by-line fallback
-      let updatedCount = 0;
-      const lines = rawText.split('\n');
-
-      requirements.forEach(med => {
-        const medKey = med.name.toLowerCase().replace(/[^a-z0-9]/g, "");
-        lines.forEach(line => {
-          const cleanLine = line.toLowerCase().replace(/[^a-z0-9%.:]/g, "");
-          if (cleanLine.includes(medKey.slice(0, 10))) {
-            const discMatch = line.match(/(\d+(\.\d+)?)%/);
-            if (discMatch) {
-              const disc = parseFloat(discMatch[1]);
-              if (!isNaN(disc)) {
-                if (!quotes[targetSupId]) quotes[targetSupId] = {};
-                quotes[targetSupId][med.id] = { disc, status: "Available", remarks: "WhatsApp Quoted" };
-                updatedCount++;
-              }
-            }
-          }
-        });
-      });
-
-      if (updatedCount > 0) {
-        saveState();
-        closeModal("modalImportQuote");
-        renderBuyerDashboard();
-        showToast(`Imported ${updatedCount} discount quotes!`);
-      } else {
-        showToast("No matching quotes found in text", "error");
-      }
-    }
-
-    // --- ADD MEDICINE HANDLER ---
-    function openAddMedicineModal() {
-      document.getElementById("modalAddMedicine").classList.remove("hidden");
+      showToast("Invalid quote code format", "error");
     }
 
     function handleSaveMedicine(e) {
@@ -1794,20 +1447,17 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       const pack = sanitizeText(document.getElementById("medPack").value) || "Standard Pack";
       const qty = parseInt(document.getElementById("medQty").value) || 50;
 
-      const newId = `med-${Date.now()}`;
-      requirements.unshift({ id: newId, name, company, pack, qty });
-
+      requirements.unshift({ id: `med-${Date.now()}`, name, company, pack, qty });
       saveState();
       closeModal("modalAddMedicine");
       document.getElementById("addMedForm").reset();
       reqCurrentPage = 1;
       renderBuyerDashboard();
-      showToast(`Added ${name} to RFQ!`);
+      showToast(`Added ${name}!`);
     }
 
     function closeModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) modal.classList.add("hidden");
+      document.getElementById(id)?.classList.add("hidden");
     }
 
     function copyToClipboard(text) {
@@ -1817,31 +1467,14 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       textarea.style.opacity = "0";
       document.body.appendChild(textarea);
       textarea.select();
-      try {
-        document.execCommand('copy');
-        showToast("Copied to clipboard!");
-      } catch (err) {
-        showToast("Failed to copy", "error");
-      }
+      document.execCommand('copy');
       document.body.removeChild(textarea);
+      showToast("Copied to clipboard!");
     }
 
-    function resetToSampleData() {
-      requirements = JSON.parse(JSON.stringify(INITIAL_REQUIREMENTS));
-      suppliers = JSON.parse(JSON.stringify(INITIAL_SUPPLIERS));
-      quotes = JSON.parse(JSON.stringify(INITIAL_QUOTES));
-      saveState();
-      reqCurrentPage = 1;
-      renderBuyerDashboard();
-      showToast("Reset to demo catalog (5 items)");
-    }
-
-    // --- CSV EXPORTER ---
     function exportToCSV() {
       let csv = "Medicine Name,Company,Pack Size,Quantity";
-      suppliers.forEach(s => {
-        csv += `,${s.name.replace(/,/g, '')} Disc%`;
-      });
+      suppliers.forEach(s => csv += `,${s.name.replace(/,/g, '')} Disc%`);
       csv += ",Best L1 Discount%\n";
 
       requirements.forEach(med => {
@@ -1867,31 +1500,21 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
       showToast("Comparison CSV downloaded");
     }
 
-    // --- INCOMING LINK PARSING ---
-    function parseIncomingLink() {
+    // --- PARSE INCOMING HASH (Enforces Supplier Lock & Decodes Catalog) ---
+    function checkIncomingLink() {
       const hash = window.location.hash;
       if (!hash) return false;
 
       try {
-        if (hash.includes("sup=")) {
-          const supId = hash.split("sup=")[1].split("&")[0];
-          let matchedSup = suppliers.find(s => s.id === supId);
-          if (!matchedSup) {
-            matchedSup = { id: supId, name: "Invited Supplier", contact: "WhatsApp", city: "Local" };
-            suppliers.push(matchedSup);
-            saveState();
-          }
-          switchView('supplier', supId);
-          return true;
-        }
-
-        if (hash.includes("lz=")) {
-          const lzData = hash.split("lz=")[1];
+        if (hash.includes("rfq=")) {
+          const lzData = hash.split("rfq=")[1];
           const decompressed = LZString.decompressFromEncodedURIComponent(lzData);
           if (decompressed) {
-            const raw = JSON.parse(decompressed);
-            if (raw.r && raw.r.length > 0) {
-              requirements = raw.r.map(row => ({
+            const payload = JSON.parse(decompressed);
+
+            // 1. Load the exact medicine list from the chemist's upload
+            if (payload.r && payload.r.length > 0) {
+              requirements = payload.r.map(row => ({
                 id: row[0],
                 name: sanitizeText(row[1]),
                 company: sanitizeText(row[2]),
@@ -1900,29 +1523,27 @@ Pan-D Capsule, Alkem, 15 Caps, 350" class="w-full text-xs font-mono p-3 bg-slate
               }));
               saveState();
             }
-            if (raw.s) {
-              switchView('supplier', raw.s);
+
+            // 2. Lock screen permanently to Supplier Mode
+            if (payload.sId) {
+              enforceSupplierLockdown(payload.sId, payload.sName);
               return true;
             }
           }
         }
       } catch (err) {
-        console.error("Hash parsing error:", err);
+        console.error("Link unpack error:", err);
       }
       return false;
     }
 
-    // --- INITIALIZATION ---
+    // --- INITIALIZE APPLICATION ---
     window.onload = function() {
       loadState();
-      const isSupplierMode = parseIncomingLink();
-      if (!isSupplierMode) {
+      const lockedInSupplier = checkIncomingLink();
+      if (!lockedInSupplier) {
         renderBuyerDashboard();
       }
-    };
-
-    window.onhashchange = function() {
-      parseIncomingLink();
     };
   </script>
 </body>
