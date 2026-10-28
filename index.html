@@ -108,7 +108,12 @@
         </div>
       </div>
       <div class="flex items-center space-x-2">
-        <span class="text-[11px] bg-blue-800 text-blue-100 border border-blue-600 px-2.5 py-1 rounded-full flex items-center space-x-1">
+        <button onclick="document.getElementById('supCatalogFileInput').click()" class="px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-lg flex items-center space-x-1">
+          <i class="fa-solid fa-file-import mr-1"></i>
+          <span>Load Chemist RFQ File</span>
+        </button>
+        <input type="file" id="supCatalogFileInput" accept=".json,.xlsx,.csv" class="hidden" onchange="handleSupplierCatalogUpload(event)">
+        <span class="text-[11px] bg-blue-800 text-blue-100 border border-blue-600 px-2.5 py-1 rounded-full hidden sm:flex items-center space-x-1">
           <i class="fa-solid fa-shield-halved text-emerald-400"></i>
           <span>100% Confidential</span>
         </span>
@@ -324,11 +329,13 @@
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div class="flex items-center space-x-3 flex-1 max-w-sm">
-            <input type="text" id="supplierSearchInput" oninput="renderSupplierPortal()" placeholder="Search medicine in list..." class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <input type="text" id="supplierSearchInput" oninput="filterSupplierPortalItems()" placeholder="Search medicine in list..." class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
           </div>
-          <span class="text-xs font-semibold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
-            <i class="fa-solid fa-check-double mr-1"></i> Auto-saves in browser
-          </span>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs font-semibold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
+              <i class="fa-solid fa-check-double mr-1"></i> Auto-saves in browser
+            </span>
+          </div>
         </div>
 
         <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
@@ -346,6 +353,15 @@
             </thead>
             <tbody id="supplierQuoteTableBody" class="divide-y divide-slate-200"></tbody>
           </table>
+        </div>
+
+        <div id="supplierPaginationFooter" class="p-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between">
+          <span id="supPageCountInfo">Showing 1 to 50 of 0</span>
+          <div class="flex items-center space-x-2">
+            <button onclick="changeSupPage(-1)" id="btnSupPrevPage" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 font-bold">Prev</button>
+            <span id="supCurrentPageNum" class="font-bold text-slate-800">1</span>
+            <button onclick="changeSupPage(1)" id="btnSupNextPage" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 font-bold">Next</button>
+          </div>
         </div>
 
         <div class="p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -377,8 +393,8 @@
             <i class="fa-solid fa-share-nodes"></i>
           </div>
           <div>
-            <h3 class="font-bold text-slate-900 text-base">Send RFQ Link to Suppliers (<span id="modalCatalogCount">0</span> Items)</h3>
-            <p class="text-xs text-slate-500">Each supplier gets their own isolated private link with your catalog</p>
+            <h3 class="font-bold text-slate-900 text-base">Send Clean RFQ Link (<span id="modalCatalogCount">0</span> Items)</h3>
+            <p class="text-xs text-slate-500">Short, 100% WhatsApp-compatible links that never break</p>
           </div>
         </div>
         <button onclick="closeModal('modalShare')" class="text-slate-400 hover:text-slate-600 text-lg w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center">
@@ -387,6 +403,18 @@
       </div>
 
       <div class="py-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+        <!-- Catalog Download Section for 1000+ Items -->
+        <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+          <div>
+            <h4 class="text-xs font-bold text-emerald-950">Catalog File for Big Lists (1600+ items)</h4>
+            <p class="text-[11px] text-emerald-800 mt-0.5">Download this file once and attach on WhatsApp along with the short link.</p>
+          </div>
+          <button onclick="downloadRFQCatalogFile()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1 shadow-xs">
+            <i class="fa-solid fa-file-arrow-down mr-1"></i>
+            <span>Download RFQ File</span>
+          </button>
+        </div>
+
         <div class="flex items-center justify-between">
           <span class="text-xs font-bold text-slate-700">Suppliers:</span>
           <button onclick="addNewSupplierPrompt()" class="text-xs font-bold text-brand-700 hover:text-brand-800 flex items-center space-x-1">
@@ -399,7 +427,7 @@
       </div>
 
       <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-        <p class="text-[11px] text-slate-400 italic">Suppliers will never see buyer options or competitor bids.</p>
+        <p class="text-[11px] text-slate-400 italic">Short links will directly open the confidential portal on phone.</p>
         <button onclick="closeModal('modalShare')" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold">
           Done
         </button>
@@ -560,20 +588,6 @@
     const STORAGE_KEY_SUPS = "pharma_discount_sups_v5";
     const STORAGE_KEY_QUOTES = "pharma_discount_quotes_v5";
 
-    const INITIAL_REQUIREMENTS = [
-      { id: "med-1", name: "Augmentin 625 Duo Tablet", company: "GSK Pharmaceuticals", pack: "10 Tabs", qty: 250 },
-      { id: "med-2", name: "Pan-D Capsule", company: "Alkem Laboratories", pack: "15 Caps", qty: 400 },
-      { id: "med-3", name: "Monocef 1gm Injection", company: "Aristo Pharmaceuticals", pack: "1 Vial", qty: 600 },
-      { id: "med-4", name: "Telma 40 Tablet", company: "Glenmark Pharmaceuticals", pack: "30 Tabs", qty: 180 },
-      { id: "med-5", name: "Shelcal 500 Tablet", company: "Torrent Pharmaceuticals", pack: "15 Tabs", qty: 500 }
-    ];
-
-    const INITIAL_SUPPLIERS = [
-      { id: "sup-1", name: "Apollo Pharma Distributors", contact: "+91 98250 11223", city: "Ahmedabad" },
-      { id: "sup-2", name: "Balaji Medicine Syndicate", contact: "+91 98980 44556", city: "Surat" },
-      { id: "sup-3", name: "Gujarat Wholesale Chemist", contact: "+91 97120 77889", city: "Vadodara" }
-    ];
-
     let requirements = [];
     let suppliers = [];
     let quotes = {};
@@ -582,6 +596,7 @@
     let activeBuyerTab = "requirements";
     let pendingUploadList = [];
     let reqCurrentPage = 1;
+    let supCurrentPage = 1;
     const REQ_PAGE_SIZE = 50;
 
     function loadState() {
@@ -590,12 +605,15 @@
         const storedSups = localStorage.getItem(STORAGE_KEY_SUPS);
         const storedQuotes = localStorage.getItem(STORAGE_KEY_QUOTES);
 
-        requirements = storedReqs ? JSON.parse(storedReqs) : JSON.parse(JSON.stringify(INITIAL_REQUIREMENTS));
-        suppliers = storedSups ? JSON.parse(storedSups) : JSON.parse(JSON.stringify(INITIAL_SUPPLIERS));
+        requirements = storedReqs ? JSON.parse(storedReqs) : [];
+        suppliers = storedSups ? JSON.parse(storedSups) : [
+          { id: "sup-1", name: "SHC Distributors", contact: "+91 98000 11111", city: "Ahmedabad" },
+          { id: "sup-2", name: "Apollo Pharma Syndicate", contact: "+91 98980 22222", city: "Surat" }
+        ];
         quotes = storedQuotes ? JSON.parse(storedQuotes) : {};
       } catch (e) {
-        requirements = JSON.parse(JSON.stringify(INITIAL_REQUIREMENTS));
-        suppliers = JSON.parse(JSON.stringify(INITIAL_SUPPLIERS));
+        requirements = [];
+        suppliers = [];
         quotes = {};
       }
     }
@@ -606,47 +624,8 @@
         localStorage.setItem(STORAGE_KEY_SUPS, JSON.stringify(suppliers));
         localStorage.setItem(STORAGE_KEY_QUOTES, JSON.stringify(quotes));
       } catch (e) {
-        console.warn("Storage warning", e);
+        console.warn("Storage quota warning", e);
       }
-    }
-
-    function downloadStandaloneFile() {
-      try {
-        const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
-        const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `PharmaQuote_Backup_${new Date().toISOString().slice(0, 10)}.html`;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 100);
-        showToast("Application backup downloaded!");
-      } catch (err) {
-        showToast("Failed to save.", "error");
-      }
-    }
-
-    function showToast(msg, type = "success") {
-      const toast = document.getElementById("toast");
-      const icon = document.getElementById("toastIcon");
-      const toastMsg = document.getElementById("toastMsg");
-      if (!toast || !icon || !toastMsg) return;
-
-      toastMsg.innerText = msg;
-      if (type === "error") {
-        icon.className = "fa-solid fa-circle-exclamation text-rose-400 text-lg";
-      } else {
-        icon.className = "fa-solid fa-circle-check text-emerald-400 text-lg";
-      }
-
-      toast.classList.remove("translate-y-20", "opacity-0");
-      setTimeout(() => {
-        toast.classList.add("translate-y-20", "opacity-0");
-      }, 3000);
     }
 
     // --- LOCKDOWN SUPPLIER VIEW (Zero Buyer Access) ---
@@ -657,8 +636,8 @@
       // Completely remove/hide Buyer Elements
       const buyerHeader = document.getElementById("buyerHeader");
       const buyerPortal = document.getElementById("buyerPortal");
-      if (buyerHeader) buyerHeader.remove(); // Remove from DOM for security
-      if (buyerPortal) buyerPortal.remove(); // Remove from DOM for security
+      if (buyerHeader) buyerHeader.remove(); // Remove permanently from DOM
+      if (buyerPortal) buyerPortal.remove(); // Remove permanently from DOM
 
       // Show Supplier Elements
       const supplierHeader = document.getElementById("supplierHeader");
@@ -669,481 +648,16 @@
       document.getElementById("hdrSupName").innerText = supName || "Distributor";
       document.getElementById("supplierPortalName").innerText = supName || "Distributor Portal";
 
+      supCurrentPage = 1;
       renderSupplierPortal();
     }
 
-    function switchView(role) {
-      if (isSupplierMode) return; // Strict lock
-      renderBuyerDashboard();
-    }
-
-    // --- TAB SWITCHER FOR BUYER ---
-    function switchBuyerTab(tabName) {
-      activeBuyerTab = tabName;
-      const tabReq = document.getElementById("buyerTabRequirements");
-      const tabComp = document.getElementById("buyerTabComparison");
-      const tabPO = document.getElementById("buyerTabPOSplit");
-
-      const btnReq = document.getElementById("tabBtnReqs");
-      const btnComp = document.getElementById("tabBtnCompare");
-      const btnPO = document.getElementById("tabBtnPO");
-
-      [tabReq, tabComp, tabPO].forEach(t => t.classList.add("hidden"));
-      [btnReq, btnComp, btnPO].forEach(b => {
-        b.className = "px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2";
-      });
-
-      if (tabName === "requirements") {
-        tabReq.classList.remove("hidden");
-        btnReq.className = "px-4 py-2 text-sm font-semibold border-b-2 border-brand-600 text-brand-700 flex items-center space-x-2";
-        renderRequirementsTable();
-      } else if (tabName === "comparison") {
-        tabComp.classList.remove("hidden");
-        btnComp.className = "px-4 py-2 text-sm font-semibold border-b-2 border-brand-600 text-brand-700 flex items-center space-x-2";
-        renderComparisonMatrix();
-      } else if (tabName === "posplit") {
-        tabPO.classList.remove("hidden");
-        btnPO.className = "px-4 py-2 text-sm font-semibold border-b-2 border-brand-600 text-brand-700 flex items-center space-x-2";
-        renderPOSplitSection();
-      }
-    }
-
-    function renderBuyerDashboard() {
-      if (isSupplierMode) return;
-
-      document.getElementById("statTotalItems").innerText = requirements.length;
-      document.getElementById("tabCountReq").innerText = requirements.length;
-
-      let quotedSuppliers = 0;
-      suppliers.forEach(sup => {
-        if (quotes[sup.id] && Object.values(quotes[sup.id]).some(q => q.disc > 0)) {
-          quotedSuppliers++;
-        }
-      });
-      document.getElementById("statSuppliersQuoted").innerText = `${quotedSuppliers} / ${suppliers.length}`;
-
-      let maxDiscFound = 0;
-      let totalL1Disc = 0;
-      let l1Count = 0;
-
-      requirements.forEach(med => {
-        let bestDisc = 0;
-        suppliers.forEach(s => {
-          const q = quotes[s.id] ? quotes[s.id][med.id] : null;
-          if (q && q.disc > bestDisc) {
-            bestDisc = q.disc;
-          }
-        });
-        if (bestDisc > maxDiscFound) maxDiscFound = bestDisc;
-        if (bestDisc > 0) {
-          totalL1Disc += bestDisc;
-          l1Count++;
-        }
-      });
-
-      document.getElementById("statMaxDiscount").innerText = maxDiscFound > 0 ? `${maxDiscFound.toFixed(1)}%` : "0%";
-      document.getElementById("statAvgDiscount").innerText = l1Count > 0 ? `${(totalL1Disc / l1Count).toFixed(1)}%` : "0%";
-
-      if (activeBuyerTab === "requirements") {
-        renderRequirementsTable();
-      } else if (activeBuyerTab === "comparison") {
-        renderComparisonMatrix();
-      } else if (activeBuyerTab === "posplit") {
-        renderPOSplitSection();
-      }
-    }
-
-    function renderRequirementsTable(query = "") {
-      const tbody = document.getElementById("requirementsTableBody");
-      if (!tbody) return;
-      tbody.innerHTML = "";
-
-      const qStr = query.toLowerCase().trim();
-      const filtered = requirements.filter(m => 
-        (m.name || "").toLowerCase().includes(qStr) ||
-        (m.company || "").toLowerCase().includes(qStr) ||
-        (m.pack || "").toLowerCase().includes(qStr)
-      );
-
-      const totalItems = filtered.length;
-      const totalPages = Math.ceil(totalItems / REQ_PAGE_SIZE) || 1;
-      if (reqCurrentPage > totalPages) reqCurrentPage = totalPages;
-      if (reqCurrentPage < 1) reqCurrentPage = 1;
-
-      const startIdx = (reqCurrentPage - 1) * REQ_PAGE_SIZE;
-      const endIdx = Math.min(startIdx + REQ_PAGE_SIZE, totalItems);
-      const pageSlice = filtered.slice(startIdx, endIdx);
-
-      document.getElementById("pageCountInfo").innerText = totalItems > 0 
-        ? `Showing ${startIdx + 1} to ${endIdx} of ${totalItems}`
-        : `Showing 0 of 0`;
-      document.getElementById("currentPageNum").innerText = `${reqCurrentPage} / ${totalPages}`;
-      document.getElementById("btnPrevPage").disabled = (reqCurrentPage <= 1);
-      document.getElementById("btnNextPage").disabled = (reqCurrentPage >= totalPages);
-
-      if (pageSlice.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="7" class="text-center py-10 text-slate-400">
-              <i class="fa-solid fa-box-open text-3xl mb-2 block"></i>
-              No medicine requirements found. Click "Upload Excel / CSV" to import your list.
-            </td>
-          </tr>
-        `;
-        return;
-      }
-
-      pageSlice.forEach((med, idx) => {
-        let quotesCount = 0;
-        suppliers.forEach(s => {
-          if (quotes[s.id] && quotes[s.id][med.id] && quotes[s.id][med.id].disc > 0) {
-            quotesCount++;
-          }
-        });
-
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-50 transition-colors";
-        tr.innerHTML = `
-          <td class="px-4 py-3.5 font-mono text-xs text-slate-400 font-semibold">${startIdx + idx + 1}</td>
-          <td class="px-4 py-3.5 font-bold text-slate-900">${med.name}</td>
-          <td class="px-4 py-3.5">
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700">
-              ${med.company}
-            </span>
-          </td>
-          <td class="px-4 py-3.5 text-xs font-medium text-slate-600">${med.pack}</td>
-          <td class="px-4 py-3.5 text-center font-bold text-slate-800">${med.qty}</td>
-          <td class="px-4 py-3.5 text-center">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
-              quotesCount === suppliers.length && suppliers.length > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-            }">
-              ${quotesCount} / ${suppliers.length} Quotes
-            </span>
-          </td>
-          <td class="px-4 py-3.5 text-center">
-            <button onclick="deleteMedicine('${med.id}')" class="text-slate-400 hover:text-red-600 transition-colors p-1" title="Delete requirement">
-              <i class="fa-regular fa-trash-can"></i>
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function changeReqPage(delta) {
-      reqCurrentPage += delta;
-      renderRequirementsTable(document.getElementById("searchMedicine").value);
-    }
-
-    function filterRequirements() {
-      reqCurrentPage = 1;
-      const q = document.getElementById("searchMedicine").value;
-      renderRequirementsTable(q);
-    }
-
-    function deleteMedicine(id) {
-      requirements = requirements.filter(m => m.id !== id);
-      suppliers.forEach(s => {
-        if (quotes[s.id]) delete quotes[s.id][id];
-      });
-      saveState();
-      renderBuyerDashboard();
-      showToast("Medicine removed");
-    }
-
-    function renderComparisonMatrix() {
-      const headerRow = document.getElementById("comparisonHeaderRow");
-      const tbody = document.getElementById("comparisonTableBody");
-      if (!headerRow || !tbody) return;
-
-      let headersHtml = `
-        <th class="px-4 py-3.5">Medicine & Company</th>
-        <th class="px-4 py-3.5">Pack & Qty</th>
-      `;
-      suppliers.forEach(sup => {
-        headersHtml += `
-          <th class="px-4 py-3.5 text-center bg-slate-800 border-l border-slate-700">
-            <div>${sup.name}</div>
-            <div class="text-[10px] text-slate-400 font-normal font-mono">${sup.city}</div>
-          </th>
-        `;
-      });
-      headersHtml += `
-        <th class="px-4 py-3.5 text-right bg-emerald-950 text-emerald-300 border-l border-emerald-800">Best Discount (L1)</th>
-      `;
-      headerRow.innerHTML = headersHtml;
-
-      tbody.innerHTML = "";
-
-      requirements.forEach(med => {
-        let maxDisc = -1;
-        let bestSupplierId = null;
-
-        suppliers.forEach(s => {
-          const q = quotes[s.id] ? quotes[s.id][med.id] : null;
-          if (q && q.disc > maxDisc) {
-            maxDisc = q.disc;
-            bestSupplierId = s.id;
-          }
-        });
-
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-50 transition-colors";
-
-        let html = `
-          <td class="px-4 py-3">
-            <div class="font-bold text-slate-900 text-xs sm:text-sm">${med.name}</div>
-            <div class="text-[11px] text-slate-400 font-medium">${med.company}</div>
-          </td>
-          <td class="px-4 py-3">
-            <div class="text-xs font-semibold text-slate-700">${med.pack}</div>
-            <span class="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[11px] mt-0.5">Qty: ${med.qty}</span>
-          </td>
-        `;
-
-        suppliers.forEach(s => {
-          const q = quotes[s.id] ? quotes[s.id][med.id] : null;
-          const isWinner = (s.id === bestSupplierId && maxDisc > 0);
-
-          if (q && q.disc > 0) {
-            html += `
-              <td class="px-4 py-3 text-center border-l border-slate-200 ${isWinner ? 'bg-emerald-50/80' : ''}">
-                <div class="text-sm font-extrabold ${isWinner ? 'text-emerald-700' : 'text-slate-800'}">
-                  ${isWinner ? '<i class="fa-solid fa-crown text-emerald-600 mr-1 text-xs"></i>' : ''}${q.disc.toFixed(1)}%
-                </div>
-                <div class="text-[10px] text-slate-400 mt-0.5">${q.status || 'Available'}</div>
-              </td>
-            `;
-          } else {
-            html += `
-              <td class="px-4 py-3 text-center border-l border-slate-200 text-xs text-slate-400 italic">--</td>
-            `;
-          }
-        });
-
-        if (maxDisc > 0) {
-          const winningSup = suppliers.find(s => s.id === bestSupplierId);
-          html += `
-            <td class="px-4 py-3 text-right border-l border-emerald-200 bg-emerald-50/40">
-              <div class="text-base font-black text-emerald-700">${maxDisc.toFixed(1)}%</div>
-              <div class="text-xs font-bold text-slate-800 truncate max-w-[150px] ml-auto">${winningSup ? winningSup.name : ''}</div>
-            </td>
-          `;
-        } else {
-          html += `
-            <td class="px-4 py-3 text-right border-l border-slate-200 text-slate-400 text-xs italic">Pending</td>
-          `;
-        }
-
-        tr.innerHTML = html;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function renderPOSplitSection() {
-      const container = document.getElementById("poSupplierCardsContainer");
-      if (!container) return;
-      container.innerHTML = "";
-
-      suppliers.forEach(sup => {
-        const winningItems = [];
-
-        requirements.forEach(med => {
-          let highestDisc = -1;
-          let bestSupId = null;
-
-          suppliers.forEach(s => {
-            const q = quotes[s.id] ? quotes[s.id][med.id] : null;
-            if (q && q.disc > highestDisc) {
-              highestDisc = q.disc;
-              bestSupId = s.id;
-            }
-          });
-
-          if (bestSupId === sup.id && highestDisc > 0) {
-            const q = quotes[sup.id][med.id];
-            winningItems.push({ med, discount: q.disc });
-          }
-        });
-
-        const poNumber = `PO-${sup.name.slice(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
-
-        const card = document.createElement("div");
-        card.className = "bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between overflow-hidden";
-
-        let itemsHtml = "";
-        if (winningItems.length === 0) {
-          itemsHtml = `
-            <div class="p-8 text-center text-slate-400 text-xs">
-              <i class="fa-solid fa-triangle-exclamation text-2xl mb-1 text-slate-300 block"></i>
-              No items won by this distributor.
-            </div>
-          `;
-        } else {
-          itemsHtml = `
-            <div class="divide-y divide-slate-100 max-h-64 overflow-y-auto custom-scrollbar">
-              ${winningItems.map(item => `
-                <div class="p-3.5 text-xs flex items-center justify-between hover:bg-slate-50">
-                  <div>
-                    <div class="font-bold text-slate-900">${item.med.name}</div>
-                    <div class="text-[11px] text-slate-500 mt-0.5">
-                      ${item.med.company} • Pack: <span class="font-semibold text-slate-700">${item.med.pack}</span>
-                    </div>
-                  </div>
-                  <div class="text-right">
-                    <div class="text-sm font-extrabold text-emerald-700">${item.discount.toFixed(1)}% Disc</div>
-                    <div class="text-[11px] font-bold text-slate-700">Qty: ${item.med.qty}</div>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          `;
-        }
-
-        card.innerHTML = `
-          <div>
-            <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-              <div>
-                <div class="flex items-center space-x-2">
-                  <span class="font-bold text-sm">${sup.name}</span>
-                  <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500 text-slate-900 font-extrabold">${winningItems.length} Won</span>
-                </div>
-                <p class="text-[11px] text-slate-400 font-mono mt-0.5">${poNumber} • ${sup.contact}</p>
-              </div>
-              <div class="text-right">
-                <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Total Won Items</span>
-                <span class="text-base font-extrabold text-emerald-400">${winningItems.length} Products</span>
-              </div>
-            </div>
-            ${itemsHtml}
-          </div>
-          <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
-            <button onclick="copyPOWhatsAppText('${sup.id}', '${poNumber}')" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all">
-              <i class="fa-brands fa-whatsapp text-sm"></i>
-              <span>WhatsApp PO</span>
-            </button>
-            <button onclick="printPO('${sup.id}', '${poNumber}')" class="flex-1 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5">
-              <i class="fa-solid fa-print"></i>
-              <span>Print Slip</span>
-            </button>
-          </div>
-        `;
-
-        container.appendChild(card);
-      });
-    }
-
-    function copyPOWhatsAppText(supplierId, poNumber) {
-      const sup = suppliers.find(s => s.id === supplierId);
-      const winningItems = [];
-
-      requirements.forEach(med => {
-        let highestDisc = -1;
-        let bestSupId = null;
-        suppliers.forEach(s => {
-          const q = quotes[s.id] ? quotes[s.id][med.id] : null;
-          if (q && q.disc > highestDisc) {
-            highestDisc = q.disc;
-            bestSupId = s.id;
-          }
-        });
-
-        if (bestSupId === supplierId && highestDisc > 0) {
-          winningItems.push({ med, discount: highestDisc });
-        }
-      });
-
-      if (winningItems.length === 0) {
-        showToast("No winning items for this supplier");
-        return;
-      }
-
-      let text = `*OFFICIAL PURCHASE ORDER*\n`;
-      text += `*PO Ref:* ${poNumber}\n`;
-      text += `*Supplier:* ${sup.name}\n`;
-      text += `*Date:* ${new Date().toLocaleDateString('en-IN')}\n\n`;
-      text += `Please supply the following medicines as per your approved *Best Discount Quote*:\n\n`;
-
-      winningItems.forEach((item, idx) => {
-        text += `${idx + 1}. *${item.med.name}*\n`;
-        text += `   - Pack: ${item.med.pack} | *Order Qty: ${item.med.qty}*\n`;
-        text += `   - *Approved Discount: ${item.discount.toFixed(1)}%*\n\n`;
-      });
-
-      text += `_Please confirm dispatch and bill._`;
-      copyToClipboard(text);
-      showToast("WhatsApp purchase order copied!");
-    }
-
-    function printPO(supplierId, poNumber) {
-      const sup = suppliers.find(s => s.id === supplierId);
-      const winningItems = [];
-
-      requirements.forEach(med => {
-        let highestDisc = -1;
-        let bestSupId = null;
-        suppliers.forEach(s => {
-          const q = quotes[s.id] ? quotes[s.id][med.id] : null;
-          if (q && q.disc > highestDisc) {
-            highestDisc = q.disc;
-            bestSupId = s.id;
-          }
-        });
-        if (bestSupId === supplierId && highestDisc > 0) {
-          winningItems.push({ med, discount: highestDisc });
-        }
-      });
-
-      const printArea = document.getElementById("printContainer");
-      printArea.innerHTML = `
-        <div style="max-width: 800px; margin: auto; padding: 20px; font-family: sans-serif; color: #0f172a;">
-          <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 12px;">
-            <div>
-              <h1 style="font-size: 20px; font-weight: bold; margin: 0;">PURCHASE ORDER (DISCOUNT BASIS)</h1>
-              <p style="margin: 4px 0 0 0; font-size: 13px; color: #475569;">Central Order Desk</p>
-            </div>
-            <div style="text-align: right; font-size: 13px;">
-              <p style="margin: 0; font-weight: bold;">PO #: ${poNumber}</p>
-              <p style="margin: 4px 0 0 0; color: #64748b;">Date: ${new Date().toLocaleDateString('en-IN')}</p>
-            </div>
-          </div>
-          <div style="margin-top: 15px; padding: 10px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <p style="margin: 0; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold;">Vendor:</p>
-            <h3 style="margin: 2px 0 0 0; font-size: 15px; font-weight: bold;">${sup.name}</h3>
-            <p style="margin: 2px 0 0 0; font-size: 12px; color: #475569;">Contact: ${sup.contact} | City: ${sup.city}</p>
-          </div>
-          <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px;">
-            <thead>
-              <tr style="background-color: #0f172a; color: white;">
-                <th style="padding: 8px; text-align: left;">#</th>
-                <th style="padding: 8px; text-align: left;">Medicine Description</th>
-                <th style="padding: 8px; text-align: left;">Pack</th>
-                <th style="padding: 8px; text-align: center;">Order Qty</th>
-                <th style="padding: 8px; text-align: right;">Approved Discount %</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${winningItems.map((item, i) => `
-                <tr style="border-bottom: 1px solid #e2e8f0;">
-                  <td style="padding: 8px;">${i + 1}</td>
-                  <td style="padding: 8px; font-weight: bold;">${item.med.name}</td>
-                  <td style="padding: 8px;">${item.med.pack}</td>
-                  <td style="padding: 8px; text-align: center; font-weight: bold;">${item.med.qty}</td>
-                  <td style="padding: 8px; text-align: right; font-weight: bold; color: #059669;">${item.discount.toFixed(1)}%</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
-      window.print();
-    }
-
-    // --- RENDER SUPPLIER PRIVATE QUOTATION SHEET ---
+    // --- PAGINATED SUPPLIER PORTAL (For 1600+ items without freeze) ---
     function renderSupplierPortal() {
       document.getElementById("supCatalogCount").innerText = `${requirements.length} Items`;
 
       const tbody = document.getElementById("supplierQuoteTableBody");
+      if (!tbody) return;
       tbody.innerHTML = "";
 
       const filterVal = (document.getElementById("supplierSearchInput")?.value || "").toLowerCase().trim();
@@ -1152,17 +666,42 @@
         (m.company || "").toLowerCase().includes(filterVal)
       );
 
-      let quotedCount = 0;
-      filteredReqs.forEach((med, idx) => {
+      const totalItems = filteredReqs.length;
+      const totalPages = Math.ceil(totalItems / REQ_PAGE_SIZE) || 1;
+      if (supCurrentPage > totalPages) supCurrentPage = totalPages;
+      if (supCurrentPage < 1) supCurrentPage = 1;
+
+      const startIdx = (supCurrentPage - 1) * REQ_PAGE_SIZE;
+      const endIdx = Math.min(startIdx + REQ_PAGE_SIZE, totalItems);
+      const pageSlice = filteredReqs.slice(startIdx, endIdx);
+
+      document.getElementById("supPageCountInfo").innerText = totalItems > 0 
+        ? `Showing ${startIdx + 1} to ${endIdx} of ${totalItems}`
+        : `Showing 0 of 0`;
+      document.getElementById("supCurrentPageNum").innerText = `${supCurrentPage} / ${totalPages}`;
+      document.getElementById("btnSupPrevPage").disabled = (supCurrentPage <= 1);
+      document.getElementById("btnSupNextPage").disabled = (supCurrentPage >= totalPages);
+
+      if (pageSlice.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center py-10 text-slate-400">
+              <i class="fa-solid fa-cloud-arrow-down text-3xl mb-2 block text-blue-500"></i>
+              No items in this list yet. Click <strong>"Load Chemist RFQ File"</strong> at the top right to import the 1600+ medicine catalog.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      pageSlice.forEach((med, idx) => {
         const supQuotes = quotes[currentSupplierId] = quotes[currentSupplierId] || {};
         const q = supQuotes[med.id] || { disc: 0, status: "Available", remarks: "" };
-
-        if (q.disc > 0) quotedCount++;
 
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-50";
         tr.innerHTML = `
-          <td class="px-4 py-3 font-mono text-xs text-slate-400 font-semibold">${idx + 1}</td>
+          <td class="px-4 py-3 font-mono text-xs text-slate-400 font-semibold">${startIdx + idx + 1}</td>
           <td class="px-4 py-3">
             <div class="font-bold text-slate-900">${med.name}</div>
             <div class="text-xs text-slate-500">${med.company}</div>
@@ -1189,64 +728,24 @@
         tbody.appendChild(tr);
       });
 
+      let quotedCount = 0;
+      requirements.forEach(m => {
+        if (quotes[currentSupplierId] && quotes[currentSupplierId][m.id] && quotes[currentSupplierId][m.id].disc > 0) quotedCount++;
+      });
       document.getElementById("supSummaryCount").innerText = `${quotedCount} / ${requirements.length}`;
     }
 
-    function updateSupplierQuote(medId, field, value) {
-      if (!quotes[currentSupplierId]) quotes[currentSupplierId] = {};
-      if (!quotes[currentSupplierId][medId]) {
-        quotes[currentSupplierId][medId] = { disc: 0, status: "Available", remarks: "" };
-      }
-
-      quotes[currentSupplierId][medId][field] = field === 'disc' ? parseFloat(value) || 0 : value;
-      saveState();
-
-      let count = 0;
-      requirements.forEach(m => {
-        if (quotes[currentSupplierId][m.id] && quotes[currentSupplierId][m.id].disc > 0) count++;
-      });
-      document.getElementById("supSummaryCount").innerText = `${count} / ${requirements.length}`;
+    function changeSupPage(delta) {
+      supCurrentPage += delta;
+      renderSupplierPortal();
     }
 
-    function sendQuotationViaWhatsApp() {
-      const curSup = suppliers.find(s => s.id === currentSupplierId) || { name: "Distributor", id: currentSupplierId };
-      const supQuotes = quotes[currentSupplierId] || {};
-
-      let quoteCount = 0;
-      const compactQuotes = {};
-      requirements.forEach(med => {
-        const q = supQuotes[med.id];
-        if (q && q.disc > 0) {
-          quoteCount++;
-          compactQuotes[med.id] = q;
-        }
-      });
-
-      if (quoteCount === 0) {
-        showToast("Please enter a discount for at least one item", "error");
-        return;
-      }
-
-      const payload = {
-        supId: curSup.id,
-        name: curSup.name,
-        quotes: compactQuotes
-      };
-
-      const syncToken = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
-
-      let msg = `*DISCOUNT QUOTATION FROM ${curSup.name.toUpperCase()}*\n`;
-      msg += `Medicines Quoted: *${quoteCount} Items*\n`;
-      msg += `Date: ${new Date().toLocaleDateString('en-IN')}\n\n`;
-      msg += `*VERIFIED QUOTE SYNC CODE:*\n[PQ-LZ:${syncToken}]\n\n`;
-      msg += `_Chemist please copy and paste this sync code into PharmaQuote._`;
-
-      const encoded = encodeURIComponent(msg);
-      window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
-      showToast("WhatsApp message prepared!");
+    function filterSupplierPortalItems() {
+      supCurrentPage = 1;
+      renderSupplierPortal();
     }
 
-    // --- SHARE RFQ MODAL ---
+    // --- SHORT & CLEAN SHARE LINK GENERATOR ---
     function openShareModal() {
       const container = document.getElementById("supplierLinksList");
       document.getElementById("modalCatalogCount").innerText = requirements.length;
@@ -1255,16 +754,10 @@
       const currentBaseUrl = window.location.origin + window.location.pathname;
 
       suppliers.forEach(sup => {
-        // Embed the supplier identity AND the medicine catalog into the URL payload
-        const payload = {
-          sId: sup.id,
-          sName: sup.name,
-          r: requirements.map(r => [r.id, r.name, r.company, r.pack, r.qty])
-        };
-        const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
-        const supplierDirectLink = `${currentBaseUrl}#rfq=${compressed}`;
+        // Short, clean, 100% WhatsApp-safe link
+        const supplierDirectLink = `${currentBaseUrl}#sup=${encodeURIComponent(sup.id)}&name=${encodeURIComponent(sup.name)}`;
 
-        const whatsappMsg = `Hello ${sup.name},\n\nPlease enter your best Discount % for our current medicine requirements (${requirements.length} items).\n\nClick here to quote directly:\n${supplierDirectLink}\n\n(Note: Your rates remain 100% confidential).`;
+        const whatsappMsg = `Hello ${sup.name},\n\nPlease enter your best Discount % for our current requirements (${requirements.length} items).\n\nClick here to quote directly:\n${supplierDirectLink}\n\n(Note: Your quotation remains 100% confidential).`;
         const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMsg)}`;
 
         const item = document.createElement("div");
@@ -1277,7 +770,7 @@
             </div>
             <a href="${whatsappUrl}" target="_blank" class="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-md border border-emerald-200 flex items-center space-x-1">
               <i class="fa-brands fa-whatsapp text-sm text-emerald-600"></i>
-              <span>WhatsApp</span>
+              <span>WhatsApp Clean Link</span>
             </a>
           </div>
           <div class="flex items-center space-x-2">
@@ -1294,239 +787,81 @@
       document.getElementById("modalShare").classList.remove("hidden");
     }
 
-    function addNewSupplierPrompt() {
-      const name = prompt("Enter Supplier Name:");
-      if (!name) return;
-      const contact = prompt("Enter WhatsApp Number:") || "+91 98000 00000";
-      const city = prompt("Enter City / Area:") || "Ahmedabad";
-
-      const newId = `sup-${Date.now()}`;
-      suppliers.push({ id: newId, name, contact, city });
-      quotes[newId] = {};
-      saveState();
-      openShareModal();
-      showToast(`Supplier ${name} added!`);
+    function downloadRFQCatalogFile() {
+      const exportData = {
+        title: "PharmaQuote RFQ Catalog",
+        count: requirements.length,
+        date: new Date().toISOString(),
+        items: requirements
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `PharmaQuote_RFQ_${requirements.length}_Items.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast("RFQ Catalog File downloaded!");
     }
 
-    // --- UPLOAD EXCEL / CSV ---
-    function openUploadModal() {
-      pendingUploadList = [];
-      document.getElementById("uploadPreviewContainer").classList.add("hidden");
-      document.getElementById("btnConfirmImport").disabled = true;
-      document.getElementById("excelFileInput").value = "";
-      document.getElementById("modalUpload").classList.remove("hidden");
-    }
-
-    function handleExcelFileSelect(e) {
+    function handleSupplierCatalogUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
         try {
-          const data = new Uint8Array(evt.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-          processParsedRawRows(jsonData);
+          const content = evt.target.result;
+          const parsed = JSON.parse(content);
+          if (parsed.items && Array.isArray(parsed.items)) {
+            requirements = parsed.items;
+            saveState();
+            supCurrentPage = 1;
+            renderSupplierPortal();
+            showToast(`Loaded ${requirements.length} medicines successfully!`);
+          }
         } catch (err) {
-          showToast("Failed to parse file. Use valid Excel/CSV.", "error");
+          showToast("Invalid RFQ Catalog file", "error");
         }
       };
-      reader.readAsArrayBuffer(file);
+      reader.readAsText(file);
     }
 
-    function processParsedRawRows(rows) {
-      if (!rows || rows.length === 0) return;
-
-      pendingUploadList = [];
-      let startIdx = 0;
-
-      const firstCell = String(rows[0][0] || "").toLowerCase();
-      if (firstCell.includes("medicine") || firstCell.includes("item") || firstCell.includes("name") || firstCell.includes("product")) {
-        startIdx = 1;
-      }
-
-      for (let i = startIdx; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || row.length === 0) continue;
-
-        const name = sanitizeText(row[0]);
-        if (!name) continue;
-
-        const company = sanitizeText(row[1]) || "Standard Pharma";
-        const pack = sanitizeText(row[2]) || "Standard Pack";
-        let qty = parseInt(row[3]) || 50;
-        if (isNaN(qty) || qty <= 0) qty = 50;
-
-        pendingUploadList.push({
-          id: `med-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
-          name,
-          company,
-          pack,
-          qty
-        });
-      }
-
-      if (pendingUploadList.length > 0) {
-        document.getElementById("parsedItemsCount").innerText = pendingUploadList.length;
-        const tbody = document.getElementById("uploadPreviewTbody");
-        tbody.innerHTML = pendingUploadList.slice(0, 30).map(m => `
-          <tr class="hover:bg-slate-50">
-            <td class="p-2 font-bold text-slate-800">${m.name}</td>
-            <td class="p-2 text-slate-600">${m.company}</td>
-            <td class="p-2 text-slate-600">${m.pack}</td>
-            <td class="p-2 text-center font-bold text-slate-900">${m.qty}</td>
-          </tr>
-        `).join('');
-
-        document.getElementById("uploadPreviewContainer").classList.remove("hidden");
-        document.getElementById("btnConfirmImport").disabled = false;
-        showToast(`${pendingUploadList.length} medicines parsed!`);
-      }
-    }
-
-    function confirmImportMedicines() {
-      if (pendingUploadList.length === 0) return;
-
-      const shouldReplace = document.getElementById("chkReplaceExisting").checked;
-      if (shouldReplace) {
-        requirements = [...pendingUploadList];
-        suppliers.forEach(s => quotes[s.id] = {});
-      } else {
-        requirements = [...requirements, ...pendingUploadList];
-      }
-
-      saveState();
-      closeModal("modalUpload");
-      reqCurrentPage = 1;
-      renderBuyerDashboard();
-      showToast(`Loaded ${pendingUploadList.length} medicines into RFQ!`);
-    }
-
-    // --- IMPORT SUPPLIER WHATSAPP QUOTATION ---
-    function openImportQuoteModal() {
-      const select = document.getElementById("importTargetSupplier");
-      select.innerHTML = suppliers.map(s => `
-        <option value="${s.id}">${s.name} (${s.city})</option>
-      `).join('');
-      document.getElementById("importQuoteText").value = "";
-      document.getElementById("modalImportQuote").classList.remove("hidden");
-    }
-
-    function processImportedQuote() {
-      const targetSupId = document.getElementById("importTargetSupplier").value;
-      const rawText = document.getElementById("importQuoteText").value.trim();
-      if (!rawText) return;
-
-      const lzMatch = rawText.match(/\[PQ-LZ:([A-Za-z0-9+/=_-]+)\]/);
-      if (lzMatch && lzMatch[1]) {
-        try {
-          const jsonStr = LZString.decompressFromEncodedURIComponent(lzMatch[1]);
-          const data = JSON.parse(jsonStr);
-          if (data.quotes) {
-            quotes[targetSupId] = { ...(quotes[targetSupId] || {}), ...data.quotes };
-            saveState();
-            closeModal("modalImportQuote");
-            renderBuyerDashboard();
-            showToast("Imported quotation successfully!");
-            return;
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      showToast("Invalid quote code format", "error");
-    }
-
-    function handleSaveMedicine(e) {
-      e.preventDefault();
-      const name = sanitizeText(document.getElementById("medName").value);
-      const company = sanitizeText(document.getElementById("medCompany").value) || "Standard Pharma";
-      const pack = sanitizeText(document.getElementById("medPack").value) || "Standard Pack";
-      const qty = parseInt(document.getElementById("medQty").value) || 50;
-
-      requirements.unshift({ id: `med-${Date.now()}`, name, company, pack, qty });
-      saveState();
-      closeModal("modalAddMedicine");
-      document.getElementById("addMedForm").reset();
-      reqCurrentPage = 1;
-      renderBuyerDashboard();
-      showToast(`Added ${name}!`);
-    }
-
-    function closeModal(id) {
-      document.getElementById(id)?.classList.add("hidden");
-    }
-
-    function copyToClipboard(text) {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      showToast("Copied to clipboard!");
-    }
-
-    function exportToCSV() {
-      let csv = "Medicine Name,Company,Pack Size,Quantity";
-      suppliers.forEach(s => csv += `,${s.name.replace(/,/g, '')} Disc%`);
-      csv += ",Best L1 Discount%\n";
-
-      requirements.forEach(med => {
-        csv += `"${(med.name || '').replace(/"/g, '""')}","${(med.company || '').replace(/"/g, '""')}","${(med.pack || '').replace(/"/g, '""')}",${med.qty}`;
-        let highest = 0;
-        suppliers.forEach(s => {
-          const q = quotes[s.id] ? quotes[s.id][med.id] : null;
-          const disc = q ? q.disc : 0;
-          if (disc > highest) highest = disc;
-          csv += `,${disc > 0 ? disc : 0}`;
-        });
-        csv += `,${highest > 0 ? highest : 0}\n`;
-      });
-
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `PharmaQuote_Comparison_${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      showToast("Comparison CSV downloaded");
-    }
-
-    // --- PARSE INCOMING HASH (Enforces Supplier Lock & Decodes Catalog) ---
+    // --- CHECK INCOMING LINK (Short & Instant) ---
     function checkIncomingLink() {
       const hash = window.location.hash;
       if (!hash) return false;
 
       try {
+        const hashParams = new URLSearchParams(hash.substring(1));
+        
+        // 1. Direct Short Supplier Mode: #sup=sup-1&name=Apollo
+        if (hashParams.has("sup")) {
+          const sId = hashParams.get("sup");
+          const sName = hashParams.get("name") || "Distributor";
+          enforceSupplierLockdown(sId, sName);
+          return true;
+        }
+
+        // 2. Legacy rfq payload fallback (if any)
         if (hash.includes("rfq=")) {
           const lzData = hash.split("rfq=")[1];
-          const decompressed = LZString.decompressFromEncodedURIComponent(lzData);
-          if (decompressed) {
-            const payload = JSON.parse(decompressed);
-
-            // 1. Load the exact medicine list from the chemist's upload
-            if (payload.r && payload.r.length > 0) {
-              requirements = payload.r.map(row => ({
-                id: row[0],
-                name: sanitizeText(row[1]),
-                company: sanitizeText(row[2]),
-                pack: sanitizeText(row[3]),
-                qty: row[4]
-              }));
+          let jsonStr = "";
+          try {
+            jsonStr = LZString.decompressFromEncodedURIComponent(lzData);
+          } catch(e) {}
+          if (!jsonStr) {
+            try { jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(lzData)))); } catch(e) {}
+          }
+          if (jsonStr) {
+            const payload = JSON.parse(jsonStr);
+            if (payload.reqs) {
+              requirements = payload.reqs;
               saveState();
             }
-
-            // 2. Lock screen permanently to Supplier Mode
-            if (payload.sId) {
-              enforceSupplierLockdown(payload.sId, payload.sName);
+            if (payload.supId || payload.sId) {
+              enforceSupplierLockdown(payload.supId || payload.sId, payload.sName || payload.name);
               return true;
             }
           }
