@@ -595,9 +595,12 @@
     let currentSupplierId = "sup-1";
     let activeBuyerTab = "requirements";
     let pendingUploadList = [];
+    
+    // Pagination state for 1600+ items (Prevents hang)
     let reqCurrentPage = 1;
     let supCurrentPage = 1;
     const REQ_PAGE_SIZE = 50;
+    let searchDebounceTimer = null;
 
     function loadState() {
       try {
@@ -628,6 +631,714 @@
       }
     }
 
+    function switchView(viewMode) {
+      if (viewMode === 'buyer' && !isSupplierMode) {
+        switchBuyerTab('requirements');
+      }
+    }
+
+    function showToast(msg, type = "success") {
+      const toast = document.getElementById("toast");
+      const icon = document.getElementById("toastIcon");
+      const toastMsg = document.getElementById("toastMsg");
+
+      toastMsg.innerText = msg;
+      if (type === "error") {
+        icon.className = "fa-solid fa-circle-exclamation text-rose-400 text-lg";
+      } else {
+        icon.className = "fa-solid fa-circle-check text-emerald-400 text-lg";
+      }
+
+      toast.classList.remove("translate-y-20", "opacity-0");
+      setTimeout(() => {
+        toast.classList.add("translate-y-20", "opacity-0");
+      }, 3000);
+    }
+
+    // --- TAB SWITCHING ---
+    function switchBuyerTab(tabName) {
+      activeBuyerTab = tabName;
+
+      const tabReq = document.getElementById("buyerTabRequirements");
+      const tabComp = document.getElementById("buyerTabComparison");
+      const tabPO = document.getElementById("buyerTabPOSplit");
+
+      const btnReq = document.getElementById("tabBtnReqs");
+      const btnComp = document.getElementById("tabBtnCompare");
+      const btnPO = document.getElementById("tabBtnPO");
+
+      [tabReq, tabComp, tabPO].forEach(el => el.classList.add("hidden"));
+      [btnReq, btnComp, btnPO].forEach(btn => {
+        btn.className = "px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2";
+      });
+
+      if (tabName === "requirements") {
+        tabReq.classList.remove("hidden");
+        btnReq.className = "px-4 py-2 text-sm font-semibold border-b-2 border-brand-600 text-brand-700 flex items-center space-x-2";
+        renderRequirementsTable();
+      } else if (tabName === "comparison") {
+        tabComp.classList.remove("hidden");
+        btnComp.className = "px-4 py-2 text-sm font-semibold border-b-2 border-brand-600 text-brand-700 flex items-center space-x-2";
+        renderComparisonMatrix();
+      } else if (tabName === "posplit") {
+        tabPO.classList.remove("hidden");
+        btnPO.className = "px-4 py-2 text-sm font-semibold border-b-2 border-brand-600 text-brand-700 flex items-center space-x-2";
+        renderSupplierPOs();
+      }
+    }
+
+    // --- BUYER DASHBOARD & STATS (HIGH SPEED) ---
+    function renderBuyerDashboard() {
+      document.getElementById("statTotalItems").innerText = requirements.length;
+      document.getElementById("tabCountReq").innerText = requirements.length;
+
+      // Calculate Bids & Best Discounts
+      let quotedSuppliers = new Set();
+      let maxDiscountFound = 0;
+      let totalL1Discount = 0;
+      let itemsWithBids = 0;
+
+      requirements.forEach(med => {
+        let bestItemDisc = 0;
+        suppliers.forEach(sup => {
+          const supQ = quotes[sup.id]?.[med.id];
+          if (supQ && Number(supQ.disc) > 0) {
+            quotedSuppliers.add(sup.id);
+            const discNum = Number(supQ.disc);
+            if (discNum > bestItemDisc) bestItemDisc = discNum;
+            if (discNum > maxDiscountFound) maxDiscountFound = discNum;
+          }
+        });
+        if (bestItemDisc > 0) {
+          totalL1Discount += bestItemDisc;
+          itemsWithBids++;
+        }
+      });
+
+      document.getElementById("statSuppliersQuoted").innerText = `${quotedSuppliers.size} / ${suppliers.length}`;
+      document.getElementById("statMaxDiscount").innerText = `${maxDiscountFound}%`;
+      const avgDisc = itemsWithBids > 0 ? (totalL1Discount / itemsWithBids).toFixed(1) : 0;
+      document.getElementById("statAvgDiscount").innerText = `${avgDisc}%`;
+
+      renderRequirementsTable();
+    }
+
+    // --- PAGINATED REQUIREMENTS TABLE (Fast & Smooth for 1600+ items) ---
+    function renderRequirementsTable() {
+      const tbody = document.getElementById("requirementsTableBody");
+      tbody.innerHTML = "";
+
+      const query = (document.getElementById("searchMedicine")?.value || "").toLowerCase().trim();
+      const filtered = requirements.filter(m => 
+        (m.name || "").toLowerCase().includes(query) || 
+        (m.company || "").toLowerCase().includes(query)
+      );
+
+      const totalItems = filtered.length;
+      const totalPages = Math.ceil(totalItems / REQ_PAGE_SIZE) || 1;
+      if (reqCurrentPage > totalPages) reqCurrentPage = totalPages;
+      if (reqCurrentPage < 1) reqCurrentPage = 1;
+
+      const startIdx = (reqCurrentPage - 1) * REQ_PAGE_SIZE;
+      const endIdx = Math.min(startIdx + REQ_PAGE_SIZE, totalItems);
+      const pageSlice = filtered.slice(startIdx, endIdx);
+
+      document.getElementById("pageCountInfo").innerText = totalItems > 0 
+        ? `Showing ${startIdx + 1} to ${endIdx} of ${totalItems} medicines`
+        : `Showing 0 of 0`;
+      document.getElementById("currentPageNum").innerText = `${reqCurrentPage} / ${totalPages}`;
+      document.getElementById("btnPrevPage").disabled = (reqCurrentPage <= 1);
+      document.getElementById("btnNextPage").disabled = (reqCurrentPage >= totalPages);
+
+      if (pageSlice.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center py-12 text-slate-400">
+              <i class="fa-solid fa-box-open text-3xl mb-2 block text-slate-300"></i>
+              No medicine requirements found. Click <strong>"Upload Excel / CSV"</strong> above to import your list.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+
+      pageSlice.forEach((med, idx) => {
+        let bidCount = 0;
+        suppliers.forEach(s => {
+          if (quotes[s.id]?.[med.id]?.disc > 0) bidCount++;
+        });
+
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition-colors";
+        tr.innerHTML = `
+          <td class="px-4 py-3 font-mono text-xs text-slate-400 font-semibold">${startIdx + idx + 1}</td>
+          <td class="px-4 py-3">
+            <span class="font-bold text-slate-900">${med.name}</span>
+          </td>
+          <td class="px-4 py-3 text-xs text-slate-500 font-medium">${med.company || "Standard"}</td>
+          <td class="px-4 py-3 text-xs text-slate-600 font-mono">${med.pack || "Standard Pack"}</td>
+          <td class="px-4 py-3 text-center font-bold text-slate-900">${med.qty}</td>
+          <td class="px-4 py-3 text-center">
+            <span class="px-2.5 py-1 text-xs font-bold rounded-full ${bidCount > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-500'}">
+              ${bidCount} Bids
+            </span>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <button onclick="deleteRequirementItem('${med.id}')" class="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50" title="Delete Item">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          </td>
+        `;
+        fragment.appendChild(tr);
+      });
+
+      tbody.appendChild(fragment);
+    }
+
+    function changeReqPage(delta) {
+      reqCurrentPage += delta;
+      renderRequirementsTable();
+    }
+
+    function filterRequirements() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        reqCurrentPage = 1;
+        renderRequirementsTable();
+      }, 150);
+    }
+
+    function deleteRequirementItem(id) {
+      requirements = requirements.filter(m => m.id !== id);
+      saveState();
+      renderBuyerDashboard();
+      showToast("Medicine requirement removed");
+    }
+
+    // --- COMPARISON MATRIX (Optimized for 1600+ items) ---
+    function renderComparisonMatrix() {
+      const headerRow = document.getElementById("comparisonHeaderRow");
+      const tbody = document.getElementById("comparisonTableBody");
+
+      // Setup Dynamic Supplier Columns
+      headerRow.innerHTML = `
+        <th class="px-4 py-3.5">Medicine & Company</th>
+        <th class="px-4 py-3.5">Pack & Qty</th>
+        <th class="px-4 py-3.5 text-right bg-emerald-950 text-emerald-300 border-l border-emerald-800">Best Discount (L1)</th>
+      `;
+
+      suppliers.forEach(s => {
+        const th = document.createElement("th");
+        th.className = "px-4 py-3.5 text-center text-xs";
+        th.innerHTML = `
+          <div class="font-bold text-white">${s.name}</div>
+          <div class="text-[10px] text-slate-400 font-normal">Discount %</div>
+        `;
+        headerRow.appendChild(th);
+      });
+
+      tbody.innerHTML = "";
+
+      // Limit initial display to first 200 items in comparison view to ensure instantaneous speed
+      const displayList = requirements.slice(0, 200);
+
+      if (displayList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${3 + suppliers.length}" class="text-center py-10 text-slate-400">No items available to compare.</td></tr>`;
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+
+      displayList.forEach((med, idx) => {
+        let bestDisc = -1;
+        let bestSupId = null;
+
+        suppliers.forEach(s => {
+          const d = Number(quotes[s.id]?.[med.id]?.disc || 0);
+          if (d > bestDisc && d > 0) {
+            bestDisc = d;
+            bestSupId = s.id;
+          }
+        });
+
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition-colors";
+
+        let bestSupplierName = "No Bids";
+        if (bestSupId) {
+          const found = suppliers.find(s => s.id === bestSupId);
+          if (found) bestSupplierName = found.name;
+        }
+
+        let rowHtml = `
+          <td class="px-4 py-3">
+            <div class="font-bold text-slate-900">${med.name}</div>
+            <div class="text-xs text-slate-500">${med.company || ''}</div>
+          </td>
+          <td class="px-4 py-3 text-xs text-slate-600 font-mono">
+            ${med.pack || '-'} | <strong class="text-slate-800">Qty: ${med.qty}</strong>
+          </td>
+          <td class="px-4 py-3 text-right bg-emerald-50/70 border-l border-emerald-100">
+            ${bestDisc > 0 ? `
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-black bg-emerald-600 text-white shadow-2xs">
+                <i class="fa-solid fa-crown mr-1 text-[10px] text-amber-300"></i> ${bestDisc}%
+              </span>
+              <div class="text-[10px] font-bold text-emerald-800 mt-0.5 truncate max-w-[120px] ml-auto">${bestSupplierName}</div>
+            ` : `<span class="text-xs text-slate-400 italic">None</span>`}
+          </td>
+        `;
+
+        suppliers.forEach(s => {
+          const q = quotes[s.id]?.[med.id];
+          const d = Number(q?.disc || 0);
+          const isL1 = (bestSupId === s.id && bestDisc > 0);
+
+          rowHtml += `
+            <td class="px-4 py-3 text-center ${isL1 ? 'bg-emerald-50/50 font-bold text-emerald-900' : ''}">
+              ${d > 0 ? `
+                <span class="text-xs ${isL1 ? 'text-emerald-700 font-extrabold' : 'text-slate-700 font-semibold'}">${d}%</span>
+                ${q.status && q.status !== 'Available' ? `<span class="block text-[10px] text-amber-600">(${q.status})</span>` : ''}
+              ` : `<span class="text-slate-300 text-xs">-</span>`}
+            </td>
+          `;
+        });
+
+        tr.innerHTML = rowHtml;
+        fragment.appendChild(tr);
+      });
+
+      tbody.appendChild(fragment);
+
+      if (requirements.length > 200) {
+        const trMore = document.createElement("tr");
+        trMore.innerHTML = `
+          <td colspan="${3 + suppliers.length}" class="p-3 text-center bg-slate-50 text-xs text-slate-500 font-semibold border-t">
+            Showing top 200 items in comparative view for optimal performance. (Use Split PO tab to export full orders for all ${requirements.length} items).
+          </td>
+        `;
+        tbody.appendChild(trMore);
+      }
+    }
+
+    // --- SUPPLIER-WISE SPLIT PURCHASE ORDERS ---
+    function renderSupplierPOs() {
+      const container = document.getElementById("poSupplierCardsContainer");
+      container.innerHTML = "";
+
+      // Determine won items for each supplier based on Highest Discount %
+      const wonBySupplier = {};
+      suppliers.forEach(s => { wonBySupplier[s.id] = []; });
+
+      requirements.forEach(med => {
+        let bestDisc = -1;
+        let bestSupId = null;
+
+        suppliers.forEach(s => {
+          const d = Number(quotes[s.id]?.[med.id]?.disc || 0);
+          if (d > bestDisc && d > 0) {
+            bestDisc = d;
+            bestSupId = s.id;
+          }
+        });
+
+        if (bestSupId && bestDisc > 0) {
+          wonBySupplier[bestSupId].push({
+            ...med,
+            wonDiscount: bestDisc,
+            remarks: quotes[bestSupId][med.id]?.remarks || ""
+          });
+        }
+      });
+
+      suppliers.forEach(sup => {
+        const wonItems = wonBySupplier[sup.id] || [];
+        const card = document.createElement("div");
+        card.className = "bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between";
+
+        let previewRows = wonItems.slice(0, 5).map(item => `
+          <div class="flex items-center justify-between text-xs py-1 border-b border-slate-100">
+            <span class="font-semibold text-slate-800 truncate max-w-[200px]">${item.name}</span>
+            <span class="text-emerald-700 font-bold">${item.wonDiscount}% Disc | Qty: ${item.qty}</span>
+          </div>
+        `).join("");
+
+        if (wonItems.length > 5) {
+          previewRows += `<div class="text-[11px] text-slate-400 italic pt-1">+ ${wonItems.length - 5} more won medicines...</div>`;
+        }
+
+        const poNumber = `PO-${sup.id.replace('sup-', '')}-${new Date().getMonth()+1}${new Date().getDate()}`;
+
+        // WhatsApp PO Message
+        let waText = `*PURCHASE ORDER: ${poNumber}*\nTo: ${sup.name}\nFrom: Adhiraj Pharmacy\nTotal Items: ${wonItems.length}\n\n`;
+        wonItems.forEach((it, i) => {
+          waText += `${i+1}. ${it.name} (${it.pack || 'Pack'}) - Qty: ${it.qty} [Offered Disc: ${it.wonDiscount}%]\n`;
+        });
+        waText += `\nPlease confirm and dispatch at the earliest.`;
+        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h4 class="font-bold text-slate-900 text-sm">${sup.name}</h4>
+                <p class="text-xs text-slate-400 font-mono">${poNumber}</p>
+              </div>
+              <span class="px-2.5 py-1 text-xs font-bold rounded-full ${wonItems.length > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'}">
+                ${wonItems.length} Won Items
+              </span>
+            </div>
+
+            <div class="py-3">
+              ${wonItems.length > 0 ? previewRows : '<p class="text-xs text-slate-400 py-4 text-center">No won items yet. Import supplier quotation to see split orders.</p>'}
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+            <button onclick="printPO('${sup.id}', '${poNumber}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1">
+              <i class="fa-solid fa-print mr-1"></i> Print PO Slip
+            </button>
+            <a href="${waUrl}" target="_blank" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1">
+              <i class="fa-brands fa-whatsapp text-sm mr-1"></i> Send PO WhatsApp
+            </a>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function printPO(supId, poNumber) {
+      const sup = suppliers.find(s => s.id === supId);
+      if (!sup) return;
+
+      const printDiv = document.getElementById("printContainer");
+      const wonItems = [];
+
+      requirements.forEach(med => {
+        let bestDisc = -1;
+        let bestSupId = null;
+        suppliers.forEach(s => {
+          const d = Number(quotes[s.id]?.[med.id]?.disc || 0);
+          if (d > bestDisc && d > 0) {
+            bestDisc = d;
+            bestSupId = s.id;
+          }
+        });
+        if (bestSupId === supId) {
+          wonItems.push({ ...med, wonDiscount: bestDisc });
+        }
+      });
+
+      let itemsRows = wonItems.map((item, idx) => `
+        <tr>
+          <td style="border:1px solid #ccc; padding:6px; font-size:11px;">${idx+1}</td>
+          <td style="border:1px solid #ccc; padding:6px; font-size:11px; font-weight:bold;">${item.name}</td>
+          <td style="border:1px solid #ccc; padding:6px; font-size:11px;">${item.company || ''}</td>
+          <td style="border:1px solid #ccc; padding:6px; font-size:11px;">${item.pack || ''}</td>
+          <td style="border:1px solid #ccc; padding:6px; font-size:11px; text-align:center; font-weight:bold;">${item.qty}</td>
+          <td style="border:1px solid #ccc; padding:6px; font-size:11px; text-align:right; font-weight:bold; color:#047857;">${item.wonDiscount}%</td>
+        </tr>
+      `).join("");
+
+      printDiv.innerHTML = `
+        <div style="font-family:sans-serif; max-width:800px; margin:0 auto;">
+          <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:15px;">
+            <div>
+              <h2 style="margin:0; font-size:20px; font-weight:bold;">PURCHASE ORDER</h2>
+              <p style="margin:2px 0; font-size:12px; color:#555;">PO Number: <strong>${poNumber}</strong></p>
+              <p style="margin:2px 0; font-size:12px; color:#555;">Date: ${new Date().toLocaleDateString()}</p>
+            </div>
+            <div style="text-align:right;">
+              <h3 style="margin:0; font-size:16px;">Vendor: ${sup.name}</h3>
+              <p style="margin:2px 0; font-size:12px; color:#555;">City: ${sup.city || ''}</p>
+              <p style="margin:2px 0; font-size:12px; color:#555;">Total Ordered Lines: ${wonItems.length}</p>
+            </div>
+          </div>
+          <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+            <thead>
+              <tr style="background:#f3f4f6;">
+                <th style="border:1px solid #ccc; padding:6px; font-size:11px;">#</th>
+                <th style="border:1px solid #ccc; padding:6px; font-size:11px; text-align:left;">Medicine Description</th>
+                <th style="border:1px solid #ccc; padding:6px; font-size:11px; text-align:left;">Brand / Co</th>
+                <th style="border:1px solid #ccc; padding:6px; font-size:11px; text-align:left;">Pack</th>
+                <th style="border:1px solid #ccc; padding:6px; font-size:11px; text-align:center;">Order Qty</th>
+                <th style="border:1px solid #ccc; padding:6px; font-size:11px; text-align:right;">Agreed Disc %</th>
+              </tr>
+            </thead>
+            <tbody>${itemsRows}</tbody>
+          </table>
+          <div style="margin-top:40px; display:flex; justify-content:space-between;">
+            <div style="font-size:11px; color:#666;">Prepared by: Chemist Admin</div>
+            <div style="font-size:11px; color:#666; border-top:1px solid #888; padding-top:4px; width:150px; text-align:center;">Authorized Signature</div>
+          </div>
+        </div>
+      `;
+
+      window.print();
+    }
+
+    // --- MODAL CONTROLS ---
+    function openModal(id) { document.getElementById(id).classList.remove("hidden"); }
+    function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
+
+    function openAddMedicineModal() { openModal("modalAddMedicine"); }
+    function openUploadModal() { openModal("modalUpload"); }
+    function openImportQuoteModal() {
+      const select = document.getElementById("importTargetSupplier");
+      select.innerHTML = suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
+      openModal("modalImportQuote");
+    }
+
+    function handleSaveMedicine(e) {
+      e.preventDefault();
+      const name = sanitizeText(document.getElementById("medName").value);
+      const company = sanitizeText(document.getElementById("medCompany").value) || "Standard";
+      const pack = sanitizeText(document.getElementById("medPack").value) || "Standard Pack";
+      const qty = parseInt(document.getElementById("medQty").value, 10) || 1;
+
+      requirements.push({
+        id: `med-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+        name,
+        company,
+        pack,
+        qty
+      });
+
+      saveState();
+      closeModal("modalAddMedicine");
+      document.getElementById("addMedForm").reset();
+      renderBuyerDashboard();
+      showToast("Medicine requirement added!");
+    }
+
+    // --- EXCEL FILE IMPORT ---
+    function handleExcelFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+          if (!jsonRows || jsonRows.length === 0) {
+            showToast("Empty file uploaded", "error");
+            return;
+          }
+
+          pendingUploadList = [];
+          for (let i = 0; i < jsonRows.length; i++) {
+            const row = jsonRows[i];
+            if (!row || row.length === 0) continue;
+
+            const name = sanitizeText(row[0]);
+            if (!name || name.toLowerCase().includes("medicine") || name.toLowerCase().includes("item name")) continue;
+
+            const company = sanitizeText(row[1]) || "Standard Pharma";
+            const pack = sanitizeText(row[2]) || "Standard Pack";
+            let qty = parseInt(row[3], 10);
+            if (isNaN(qty) || qty <= 0) qty = 10;
+
+            pendingUploadList.push({
+              id: `med-${Date.now()}-${i}-${Math.floor(Math.random()*1000)}`,
+              name,
+              company,
+              pack,
+              qty
+            });
+          }
+
+          document.getElementById("parsedItemsCount").innerText = pendingUploadList.length;
+          const tbody = document.getElementById("uploadPreviewTbody");
+          tbody.innerHTML = pendingUploadList.slice(0, 10).map(m => `
+            <tr>
+              <td class="p-2 font-bold">${m.name}</td>
+              <td class="p-2 text-slate-500">${m.company}</td>
+              <td class="p-2 text-slate-500">${m.pack}</td>
+              <td class="p-2 text-center font-bold">${m.qty}</td>
+            </tr>
+          `).join("");
+
+          document.getElementById("uploadPreviewContainer").classList.remove("hidden");
+          document.getElementById("btnConfirmImport").disabled = false;
+        } catch (err) {
+          console.error(err);
+          showToast("Error reading file format", "error");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function confirmImportMedicines() {
+      if (pendingUploadList.length === 0) return;
+
+      const replace = document.getElementById("chkReplaceExisting").checked;
+      if (replace) {
+        requirements = pendingUploadList;
+        quotes = {};
+      } else {
+        requirements = requirements.concat(pendingUploadList);
+      }
+
+      saveState();
+      closeModal("modalUpload");
+      pendingUploadList = [];
+      document.getElementById("uploadPreviewContainer").classList.add("hidden");
+      document.getElementById("excelFileInput").value = "";
+      reqCurrentPage = 1;
+      renderBuyerDashboard();
+      showToast(`Successfully imported ${requirements.length} medicines!`);
+    }
+
+    // --- WHATSAPP QUOTE PARSER ---
+    function processImportedQuote() {
+      const supId = document.getElementById("importTargetSupplier").value;
+      const text = document.getElementById("importQuoteText").value.trim();
+
+      if (!text) {
+        showToast("Please paste the WhatsApp quotation text", "error");
+        return;
+      }
+
+      quotes[supId] = quotes[supId] || {};
+      let updatedCount = 0;
+
+      const lines = text.split("\n");
+      lines.forEach(line => {
+        const percentMatch = line.match(/(\d+(\.\d+)?)%/);
+        if (percentMatch) {
+          const discount = parseFloat(percentMatch[1]);
+          const lineClean = line.toLowerCase();
+
+          for (let m of requirements) {
+            const medWord = m.name.toLowerCase().split(" ")[0];
+            if (lineClean.includes(medWord)) {
+              quotes[supId][m.id] = { disc: discount, status: "Available", remarks: "Imported via WhatsApp" };
+              updatedCount++;
+              break;
+            }
+          }
+        }
+      });
+
+      saveState();
+      closeModal("modalImportQuote");
+      document.getElementById("importQuoteText").value = "";
+      renderBuyerDashboard();
+      showToast(`Imported ${updatedCount} bids successfully!`);
+    }
+
+    // --- BACKUP DOWNLOAD ---
+    function downloadStandaloneFile() {
+      const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: "text/html" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `PharmaQuote_Backup_${new Date().toISOString().slice(0, 10)}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast("App backup downloaded!");
+    }
+
+    function exportToCSV() {
+      let csv = "Medicine Name,Company,Pack Size,Quantity,Best Discount (L1),Winning Supplier\n";
+      requirements.forEach(m => {
+        let bestDisc = 0;
+        let bestSup = "None";
+        suppliers.forEach(s => {
+          const d = Number(quotes[s.id]?.[m.id]?.disc || 0);
+          if (d > bestDisc) {
+            bestDisc = d;
+            bestSup = s.name;
+          }
+        });
+        csv += `"${m.name}","${m.company}","${m.pack}",${m.qty},"${bestDisc}%","${bestSup}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `PharmaQuote_Comparison_${requirements.length}_Items.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function copyToClipboard(text) {
+      const temp = document.createElement("input");
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand("copy");
+      document.body.removeChild(temp);
+      showToast("Link copied to clipboard!");
+    }
+
+    function addNewSupplierPrompt() {
+      const name = prompt("Enter Supplier/Distributor Name:");
+      if (!name) return;
+      const city = prompt("Enter City:", "Ahmedabad") || "";
+      const contact = prompt("Enter WhatsApp / Mobile Number:", "") || "";
+
+      suppliers.push({
+        id: `sup-${Date.now()}`,
+        name: sanitizeText(name),
+        city: sanitizeText(city),
+        contact: sanitizeText(contact)
+      });
+
+      saveState();
+      openShareModal();
+      showToast("Supplier added successfully!");
+    }
+
+    function updateSupplierQuote(medId, field, val) {
+      quotes[currentSupplierId] = quotes[currentSupplierId] || {};
+      quotes[currentSupplierId][medId] = quotes[currentSupplierId][medId] || { disc: 0, status: "Available", remarks: "" };
+      
+      if (field === 'disc') {
+        quotes[currentSupplierId][medId].disc = parseFloat(val) || 0;
+      } else {
+        quotes[currentSupplierId][medId][field] = val;
+      }
+      saveState();
+
+      let quotedCount = 0;
+      requirements.forEach(m => {
+        if (quotes[currentSupplierId]?.[m.id]?.disc > 0) quotedCount++;
+      });
+      document.getElementById("supSummaryCount").innerText = `${quotedCount} / ${requirements.length}`;
+    }
+
+    function sendQuotationViaWhatsApp() {
+      const supQuotes = quotes[currentSupplierId] || {};
+      let quotedLines = [];
+
+      requirements.forEach(m => {
+        const q = supQuotes[m.id];
+        if (q && q.disc > 0) {
+          quotedLines.push(`${m.name}: ${q.disc}% (${q.status})`);
+        }
+      });
+
+      if (quotedLines.length === 0) {
+        showToast("Please enter at least one discount before submitting", "error");
+        return;
+      }
+
+      let text = `*QUOTATION FROM: ${document.getElementById("hdrSupName").innerText}*\nTotal Quoted Medicines: ${quotedLines.length}\n\n`;
+      text += quotedLines.join("\n");
+
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.open(waUrl, "_blank");
+    }
+
     // --- LOCKDOWN SUPPLIER VIEW (Zero Buyer Access) ---
     function enforceSupplierLockdown(supId, supName) {
       isSupplierMode = true;
@@ -636,8 +1347,8 @@
       // Completely remove/hide Buyer Elements
       const buyerHeader = document.getElementById("buyerHeader");
       const buyerPortal = document.getElementById("buyerPortal");
-      if (buyerHeader) buyerHeader.remove(); // Remove permanently from DOM
-      if (buyerPortal) buyerPortal.remove(); // Remove permanently from DOM
+      if (buyerHeader) buyerHeader.remove();
+      if (buyerPortal) buyerPortal.remove();
 
       // Show Supplier Elements
       const supplierHeader = document.getElementById("supplierHeader");
@@ -754,7 +1465,6 @@
       const currentBaseUrl = window.location.origin + window.location.pathname;
 
       suppliers.forEach(sup => {
-        // Short, clean, 100% WhatsApp-safe link
         const supplierDirectLink = `${currentBaseUrl}#sup=${encodeURIComponent(sup.id)}&name=${encodeURIComponent(sup.name)}`;
 
         const whatsappMsg = `Hello ${sup.name},\n\nPlease enter your best Discount % for our current requirements (${requirements.length} items).\n\nClick here to quote directly:\n${supplierDirectLink}\n\n(Note: Your quotation remains 100% confidential).`;
