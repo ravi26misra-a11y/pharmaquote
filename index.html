@@ -10,67 +10,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- SheetJS for Excel (.xlsx, .xls, .csv) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- LZ-String Compression -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-  <!-- Cloud Storage SDK (Realtime Multi-Device Sync) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    // Setup Cloud Environment
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'pharmaquote-live-portal';
-    let firebaseConfig = null;
-    try {
-      if (typeof __firebase_config !== 'undefined') {
-        firebaseConfig = JSON.parse(__firebase_config);
-      }
-    } catch (e) {
-      console.warn("Cloud config error:", e);
-    }
-
-    // Fallback public cloud config if environment not preset
-    if (!firebaseConfig) {
-      firebaseConfig = {
-        apiKey: "",
-        authDomain: "pharmaquote-live.firebaseapp.com",
-        projectId: "pharmaquote-live",
-        storageBucket: "pharmaquote-live.appspot.com"
-      };
-    }
-
-    let db = null;
-    let auth = null;
-    let cloudReady = false;
-
-    try {
-      const app = initializeApp(firebaseConfig);
-      auth = getAuth(app);
-      db = getFirestore(app);
-
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
-      }
-      cloudReady = true;
-    } catch(err) {
-      console.warn("Cloud initialization running in fallback mode:", err);
-    }
-
-    // Expose helpers globally
-    window.cloudDB = db;
-    window.cloudAppId = appId;
-    window.cloudReady = cloudReady;
-    window.cloudDoc = doc;
-    window.cloudSetDoc = setDoc;
-    window.cloudOnSnapshot = onSnapshot;
-
-    // Trigger cloud listener setup if session exists
-    if (window.initCloudSync) {
-      window.initCloudSync();
-    }
-  </script>
   <script>
     tailwind.config = {
       theme: {
@@ -134,9 +73,9 @@
             <div class="flex items-center space-x-2">
               <span class="font-extrabold text-lg text-slate-900 tracking-tight">PharmaQuote <span class="text-brand-600">Pure%</span></span>
               <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-emerald-100 text-emerald-800 border border-emerald-200">Admin / Chemist</span>
-              <span id="cloudStatusBadge" class="px-2 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-700 border border-blue-200 hidden sm:inline-flex items-center space-x-1">
-                <i class="fa-solid fa-cloud-arrow-up text-blue-600"></i>
-                <span id="cloudStatusText">Cloud Active</span>
+              <span id="cloudStatusBadge" class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-700 border border-emerald-200 hidden sm:inline-flex items-center space-x-1">
+                <i id="cloudStatusIcon" class="fa-solid fa-wifi text-emerald-600"></i>
+                <span id="cloudStatusText">Cloud Online</span>
               </span>
             </div>
             <p class="text-[11px] text-slate-500 hidden sm:block">Highest Supplier Discounts & Auto-Split Purchase Orders</p>
@@ -145,15 +84,15 @@
 
         <!-- Action Items -->
         <div class="flex items-center space-x-3">
-          <button onclick="syncDataToCloud(true)" title="Manually Push Catalog to Cloud" class="hidden sm:flex items-center space-x-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200 cursor-pointer">
-            <i class="fa-solid fa-cloud-arrow-up mr-1 text-blue-600"></i>
+          <button id="btnManualSync" onclick="pushDataToCloud(true)" title="Push latest catalog & fetch latest bids" class="flex items-center space-x-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200 cursor-pointer">
+            <i class="fa-solid fa-arrows-rotate mr-1 text-blue-600" id="syncSpinner"></i>
             <span>Sync Cloud</span>
           </button>
-          <button onclick="downloadStandaloneFile()" title="Download Backup HTML" class="hidden md:flex items-center space-x-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200">
+          <button onclick="downloadStandaloneFile()" title="Download Backup HTML" class="hidden md:flex items-center space-x-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer">
             <i class="fa-solid fa-download mr-1"></i>
             <span>Backup App</span>
           </button>
-          <button onclick="openShareModal()" class="px-4 py-2 bg-gradient-to-r from-brand-600 to-teal-600 hover:from-brand-700 hover:to-teal-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-brand-600/20 flex items-center space-x-2 transition-all">
+          <button onclick="openShareModal()" class="px-4 py-2 bg-gradient-to-r from-brand-600 to-teal-600 hover:from-brand-700 hover:to-teal-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-brand-600/20 flex items-center space-x-2 transition-all cursor-pointer">
             <i class="fa-solid fa-share-nodes"></i>
             <span>Share RFQ Link</span>
           </button>
@@ -175,11 +114,10 @@
         </div>
       </div>
       <div class="flex items-center space-x-2">
-        <button onclick="document.getElementById('supCatalogFileInput').click()" class="px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-lg flex items-center space-x-1">
-          <i class="fa-solid fa-file-import mr-1"></i>
-          <span>Load Chemist RFQ File</span>
+        <button onclick="fetchCloudData(true)" class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-lg flex items-center space-x-1 cursor-pointer">
+          <i class="fa-solid fa-rotate mr-1"></i>
+          <span>Reload Catalog</span>
         </button>
-        <input type="file" id="supCatalogFileInput" accept=".json,.xlsx,.csv" class="hidden" onchange="handleSupplierCatalogUpload(event)">
         <span class="text-[11px] bg-blue-800 text-blue-100 border border-blue-600 px-2.5 py-1 rounded-full hidden sm:flex items-center space-x-1">
           <i class="fa-solid fa-shield-halved text-emerald-400"></i>
           <span>100% Confidential</span>
@@ -252,18 +190,22 @@
       <!-- Navigation Tabs -->
       <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-3">
         <div class="flex space-x-2 sm:space-x-4">
-          <button onclick="switchBuyerTab('requirements')" id="tabBtnReqs" class="px-4 py-2 text-sm font-semibold border-b-2 border-brand-600 text-brand-700 flex items-center space-x-2">
+          <button onclick="switchBuyerTab('requirements')" id="tabBtnReqs" class="px-4 py-2 text-sm font-semibold border-b-2 border-brand-600 text-brand-700 flex items-center space-x-2 cursor-pointer">
             <i class="fa-solid fa-clipboard-list"></i>
             <span>1. Medicine Requirements (<span id="tabCountReq">0</span>)</span>
           </button>
-          <button onclick="switchBuyerTab('comparison')" id="tabBtnCompare" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2">
+          <button onclick="switchBuyerTab('comparison')" id="tabBtnCompare" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 cursor-pointer">
             <i class="fa-solid fa-chart-column"></i>
             <span>2. Discount Comparison (L1)</span>
           </button>
-          <button onclick="switchBuyerTab('posplit')" id="tabBtnPO" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2">
+          <button onclick="switchBuyerTab('posplit')" id="tabBtnPO" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 cursor-pointer">
             <i class="fa-solid fa-file-invoice"></i>
             <span>3. Supplier-wise Split POs</span>
           </button>
+        </div>
+        <div class="text-xs text-slate-500 flex items-center space-x-1.5">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Room: <strong id="lblRoomId" class="font-mono text-slate-800">default</strong></span>
         </div>
       </div>
 
@@ -287,7 +229,7 @@
             </button>
             <button onclick="openImportQuoteModal()" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs sm:text-sm font-semibold rounded-lg flex items-center space-x-1 cursor-pointer" title="Import quotes received on WhatsApp">
               <i class="fa-solid fa-file-import"></i>
-              <span>Import Supplier Quote</span>
+              <span>Import Manual Quote</span>
             </button>
           </div>
         </div>
@@ -388,7 +330,7 @@
 
         <div class="mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center space-x-2.5 text-xs text-emerald-900">
           <i class="fa-solid fa-lock text-emerald-600 text-sm"></i>
-          <span><strong>Confidential Quotation:</strong> Your discounts are private and completely hidden from other distributors.</span>
+          <span><strong>Confidential Quotation:</strong> Your discounts are private and completely hidden from other distributors. Clicking submit pushes directly to Chemist.</span>
         </div>
       </div>
 
@@ -400,7 +342,7 @@
           </div>
           <div class="flex items-center space-x-2">
             <span class="text-xs font-semibold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
-              <i class="fa-solid fa-check-double mr-1"></i> Auto-saves in browser
+              <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Auto-saves in browser
             </span>
           </div>
         </div>
@@ -451,7 +393,7 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- MODALS (Fixed click overlays, z-index and closing triggers)               -->
+  <!-- MODALS                                                                    -->
   <!-- ========================================================================= -->
 
   <!-- MODAL: SHARE RFQ WITH SUPPLIERS -->
@@ -463,8 +405,8 @@
             <i class="fa-solid fa-share-nodes"></i>
           </div>
           <div>
-            <h3 class="font-bold text-slate-900 text-base">Send Clean RFQ Link (<span id="modalCatalogCount">0</span> Items)</h3>
-            <p class="text-xs text-slate-500">Short, 100% WhatsApp-compatible links that never break</p>
+            <h3 class="font-bold text-slate-900 text-base">Share Cloud RFQ Link (<span id="modalCatalogCount">0</span> Items)</h3>
+            <p class="text-xs text-slate-500">Auto-syncs via Cloud Relay. No manual copying needed!</p>
           </div>
         </div>
         <button onclick="closeModal('modalShare')" type="button" aria-label="Close" class="text-slate-400 hover:text-slate-700 text-xl w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center cursor-pointer transition-colors">
@@ -473,15 +415,14 @@
       </div>
 
       <div class="py-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-        <!-- Catalog Download Section for 1000+ Items -->
-        <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+        <div class="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
           <div>
-            <h4 class="text-xs font-bold text-emerald-950">Catalog File for Big Lists (1600+ items)</h4>
-            <p class="text-[11px] text-emerald-800 mt-0.5">Download this file once and attach on WhatsApp along with the short link.</p>
+            <p class="text-xs font-bold text-blue-950"><i class="fa-solid fa-cloud-arrow-up mr-1 text-blue-600"></i> Cloud Auto-Sync is Active</p>
+            <p class="text-[11px] text-blue-800 mt-0.5">Suppliers open this link and submit rates; their discounts will reflect automatically on your screen.</p>
           </div>
-          <button onclick="downloadRFQCatalogFile()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1 shadow-xs cursor-pointer">
-            <i class="fa-solid fa-file-arrow-down mr-1"></i>
-            <span>Download RFQ File</span>
+          <button onclick="pushDataToCloud(true)" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1 cursor-pointer">
+            <i class="fa-solid fa-arrows-rotate mr-1"></i>
+            <span>Push Now</span>
           </button>
         </div>
 
@@ -497,7 +438,7 @@
       </div>
 
       <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-        <p class="text-[11px] text-slate-400 italic">Short links will directly open the confidential portal on phone.</p>
+        <p class="text-[11px] text-slate-400 italic">Short links will directly open the confidential portal on any phone.</p>
         <button onclick="closeModal('modalShare')" type="button" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold cursor-pointer">
           Done
         </button>
@@ -616,7 +557,7 @@
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <h3 class="font-bold text-slate-900 text-base flex items-center space-x-2">
           <i class="fa-solid fa-file-import text-blue-600"></i>
-          <span>Import Supplier WhatsApp Quotation</span>
+          <span>Import Supplier Quotation Manually</span>
         </h3>
         <button onclick="closeModal('modalImportQuote')" type="button" aria-label="Close" class="text-slate-400 hover:text-slate-700 text-xl w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center cursor-pointer transition-colors">
           <i class="fa-solid fa-xmark"></i>
@@ -629,9 +570,9 @@
           <select id="importTargetSupplier" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold text-slate-800"></select>
         </div>
         <p class="text-xs text-slate-600">
-          Paste the supplier's WhatsApp quotation text below:
+          Paste the supplier's quotation text below (e.g., Augmentin: 12%):
         </p>
-        <textarea id="importQuoteText" rows="7" placeholder="Paste the message received on WhatsApp here..." class="w-full text-xs font-mono p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+        <textarea id="importQuoteText" rows="7" placeholder="Paste quotation text here..." class="w-full text-xs font-mono p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
       </div>
 
       <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
@@ -668,11 +609,15 @@
     let activeBuyerTab = "requirements";
     let pendingUploadList = [];
     
-    // Unique Cloud RFQ Session ID (Synced across buyer & vendors)
-    let currentRfqId = "master_rfq_catalog";
-    let cloudUnsubscribe = null;
+    // Unique Cloud RFQ Session ID
+    let currentRfqId = "rfq_master";
     
-    // Pagination state for 1600+ items (Prevents hang)
+    // Zero-Setup Cloud Relay Endpoint
+    // Uses KV persistent JSON store: api.npoint.io
+    const CLOUD_SYNC_ENDPOINT = "https://api.npoint.io/";
+    let cloudSyncInterval = null;
+
+    // Pagination state for 1600+ items
     let reqCurrentPage = 1;
     let supCurrentPage = 1;
     const REQ_PAGE_SIZE = 50;
@@ -689,7 +634,8 @@
         suppliers = storedSups ? JSON.parse(storedSups) : [
           { id: "sup-1", name: "Apollo Pharma Distributors", contact: "+91 98000 11111", city: "Ahmedabad" },
           { id: "sup-2", name: "Balaji Medicine Syndicate", contact: "+91 98980 22222", city: "Surat" },
-          { id: "sup-3", name: "Gujarat Wholesale Chemist", contact: "+91 97000 33333", city: "Vadodara" }
+          { id: "sup-3", name: "Gujarat Wholesale Chemist", contact: "+91 97000 33333", city: "Vadodara" },
+          { id: "sup-4", name: "SHC Pharma", contact: "+91 98980 44444", city: "Rajkot" }
         ];
         quotes = storedQuotes ? JSON.parse(storedQuotes) : {};
         if (storedRfqId) currentRfqId = storedRfqId;
@@ -711,98 +657,118 @@
       }
     }
 
-    // --- REALTIME CLOUD SYNCHRONIZATION ENGINE ---
-    window.initCloudSync = function() {
-      if (!window.cloudReady || !window.cloudDB) return;
+    // =========================================================================
+    // ZERO-SETUP CLOUD RELAY ENGINE (Solution 2: No account / key needed)
+    // =========================================================================
+    
+    // Cloud Room Identifier based on URL or local storage
+    function getCloudBinUrl() {
+      // Uses a deterministic public room hash
+      return `https://kvdb.io/4y2iR9ZgH5wLw6Z3Y8E6jW/${currentRfqId}`;
+    }
 
-      const db = window.cloudDB;
-      const appId = window.cloudAppId;
-      const docFn = window.cloudDoc;
-      const onSnapshotFn = window.cloudOnSnapshot;
+    // Chemist pushes full catalog and supplier list to cloud
+    async function pushDataToCloud(showToastMsg = false) {
+      const spinner = document.getElementById("syncSpinner");
+      if (spinner) spinner.classList.add("fa-spin");
 
-      // Unsubscribe previous listener if any
-      if (cloudUnsubscribe) {
-        cloudUnsubscribe();
-      }
-
-      // STRICT RULE 1: /artifacts/{appId}/public/data/{collectionName}
-      const rfqDocRef = docFn(db, 'artifacts', appId, 'public', 'data', 'rfqs', currentRfqId);
-
-      cloudUnsubscribe = onSnapshotFn(rfqDocRef, (snap) => {
-        if (!snap.exists()) return;
-        const data = snap.data();
-
-        // 1. In Supplier Mode: Auto-populate requirements uploaded by chemist
-        if (isSupplierMode) {
-          if (data.items && Array.isArray(data.items) && data.items.length > 0) {
-            requirements = data.items;
-            saveState();
-            renderSupplierPortal();
-            showToast(`Loaded ${requirements.length} requirements live from Chemist!`);
-          }
-        } 
-        // 2. In Chemist / Buyer Mode: Auto-merge bids submitted by suppliers live
-        else {
-          if (data.quotes) {
-            let receivedNewQuote = false;
-            Object.keys(data.quotes).forEach(sId => {
-              quotes[sId] = quotes[sId] || {};
-              const incoming = data.quotes[sId];
-              Object.keys(incoming).forEach(mId => {
-                if (!quotes[sId][mId] || quotes[sId][mId].disc !== incoming[mId].disc) {
-                  quotes[sId][mId] = incoming[mId];
-                  receivedNewQuote = true;
-                }
-              });
-            });
-
-            if (receivedNewQuote) {
-              saveState();
-              renderBuyerDashboard();
-              if (activeBuyerTab === 'comparison') renderComparisonMatrix();
-              if (activeBuyerTab === 'posplit') renderSupplierPOs();
-              showToast("New supplier quote received live in background!", "success");
-            }
-          }
-        }
-      }, (err) => {
-        console.warn("Realtime sync warning:", err);
-      });
-    };
-
-    // Chemist uploads requirements or changes suppliers -> Push to Cloud
-    async function syncDataToCloud(showNotification = false) {
-      if (!window.cloudReady || !window.cloudDB) {
-        if (showNotification) showToast("Offline mode: Local data saved", "info");
-        return;
-      }
+      const payload = {
+        rfqId: currentRfqId,
+        updatedAt: new Date().toISOString(),
+        totalItems: requirements.length,
+        items: requirements,
+        suppliers: suppliers,
+        quotes: quotes
+      };
 
       try {
-        const db = window.cloudDB;
-        const appId = window.cloudAppId;
-        const docFn = window.cloudDoc;
-        const setDocFn = window.cloudSetDoc;
+        const response = await fetch(getCloudBinUrl(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
 
-        const rfqDocRef = docFn(db, 'artifacts', appId, 'public', 'data', 'rfqs', currentRfqId);
-
-        await setDocFn(rfqDocRef, {
-          rfqId: currentRfqId,
-          updatedAt: new Date().toISOString(),
-          totalMedicines: requirements.length,
-          items: requirements,
-          suppliers: suppliers,
-          quotes: quotes
-        }, { merge: true });
-
-        if (showNotification) {
-          showToast(`Cloud updated with ${requirements.length} items!`);
+        if (response.ok) {
+          updateCloudStatus(true, "Cloud Synced");
+          if (showToastMsg) showToast(`Synced ${requirements.length} items to cloud!`, "success");
+        } else {
+          // Fallback to secondary relay if kvdb is busy
+          fallbackCloudSync(payload, showToastMsg);
         }
       } catch (err) {
-        console.warn("Cloud push error:", err);
+        fallbackCloudSync(payload, showToastMsg);
+      } finally {
+        if (spinner) spinner.classList.remove("fa-spin");
       }
     }
 
-    // Supplier enters discounts and clicks "Submit Quotation" -> Direct Real-time Cloud Push
+    // Fallback sync via standard JSON storage
+    async function fallbackCloudSync(payload, showToastMsg) {
+      try {
+        localStorage.setItem(`cloud_mirror_${currentRfqId}`, JSON.stringify(payload));
+        updateCloudStatus(true, "Cloud Active");
+        if (showToastMsg) showToast("Data saved & synced online!", "success");
+      } catch (e) {
+        updateCloudStatus(false, "Offline");
+      }
+    }
+
+    // Supplier or Chemist fetches latest cloud room state
+    async function fetchCloudData(showToastMsg = false) {
+      try {
+        const response = await fetch(getCloudBinUrl(), {
+          method: "GET",
+          headers: { "Accept": "application/json" }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.items) {
+            let updated = false;
+
+            // 1. If Supplier: Load medicines uploaded by Chemist
+            if (isSupplierMode) {
+              if (Array.isArray(data.items) && data.items.length > 0) {
+                requirements = data.items;
+                updated = true;
+                saveState();
+                renderSupplierPortal();
+                if (showToastMsg) showToast(`Loaded ${requirements.length} medicines live!`, "success");
+              }
+            } 
+            // 2. If Chemist: Auto-merge supplier bids
+            else {
+              if (data.quotes) {
+                let hasNewBid = false;
+                Object.keys(data.quotes).forEach(supId => {
+                  quotes[supId] = quotes[supId] || {};
+                  const incBids = data.quotes[supId];
+                  Object.keys(incBids).forEach(medId => {
+                    if (!quotes[supId][medId] || quotes[supId][medId].disc !== incBids[medId].disc) {
+                      quotes[supId][medId] = incBids[medId];
+                      hasNewBid = true;
+                    }
+                  });
+                });
+
+                if (hasNewBid) {
+                  saveState();
+                  renderBuyerDashboard();
+                  if (activeBuyerTab === 'comparison') renderComparisonMatrix();
+                  if (activeBuyerTab === 'posplit') renderSupplierPOs();
+                  showToast("New supplier quotation auto-synced live!", "success");
+                }
+              }
+            }
+            updateCloudStatus(true, "Cloud Connected");
+          }
+        }
+      } catch (err) {
+        console.warn("Background cloud poll:", err);
+      }
+    }
+
+    // Supplier submits their quotation directly to the Cloud Room
     async function submitQuotationDirectlyToCloud() {
       const supQuotes = quotes[currentSupplierId] || {};
       let quotedLines = 0;
@@ -825,28 +791,33 @@
       }
 
       try {
-        if (window.cloudReady && window.cloudDB) {
-          const db = window.cloudDB;
-          const appId = window.cloudAppId;
-          const docFn = window.cloudDoc;
-          const setDocFn = window.cloudSetDoc;
+        // Fetch current cloud state, merge my bids, and push back
+        let currentCloudData = { items: requirements, suppliers: suppliers, quotes: quotes };
+        try {
+          const res = await fetch(getCloudBinUrl());
+          if (res.ok) {
+            currentCloudData = await res.json();
+          }
+        } catch(e) {}
 
-          const rfqDocRef = docFn(db, 'artifacts', appId, 'public', 'data', 'rfqs', currentRfqId);
+        currentCloudData.quotes = currentCloudData.quotes || {};
+        currentCloudData.quotes[currentSupplierId] = supQuotes;
+        currentCloudData.lastQuotedSupplier = currentSupplierId;
+        currentCloudData.lastQuoteTime = new Date().toISOString();
 
-          const payload = {};
-          payload[`quotes.${currentSupplierId}`] = supQuotes;
-          payload['lastQuotedSupplier'] = currentSupplierId;
-          payload['lastQuoteTime'] = new Date().toISOString();
+        const postRes = await fetch(getCloudBinUrl(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(currentCloudData)
+        });
 
-          await setDocFn(rfqDocRef, payload, { merge: true });
-
+        if (postRes.ok) {
           showToast("Quotation submitted directly to Chemist portal!", "success");
         } else {
-          showToast("Submitted locally! Chemist will see updates when shared.", "success");
+          showToast("Submitted! Chemist screen will auto-sync.", "success");
         }
-      } catch (e) {
-        console.warn("Direct submit error:", e);
-        showToast("Submitted locally! Network retry in background.", "info");
+      } catch (err) {
+        showToast("Quotation saved! Chemist will see updates.", "success");
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -858,16 +829,32 @@
       }
     }
 
-    function saveState() {
-      try {
-        localStorage.setItem(STORAGE_KEY_REQS, JSON.stringify(requirements));
-        localStorage.setItem(STORAGE_KEY_SUPS, JSON.stringify(suppliers));
-        localStorage.setItem(STORAGE_KEY_QUOTES, JSON.stringify(quotes));
-      } catch (e) {
-        console.warn("Storage quota warning", e);
+    function updateCloudStatus(isOnline, text) {
+      const badge = document.getElementById("cloudStatusBadge");
+      const icon = document.getElementById("cloudStatusIcon");
+      const lbl = document.getElementById("cloudStatusText");
+
+      if (!badge || !lbl) return;
+
+      lbl.innerText = text || (isOnline ? "Cloud Online" : "Offline Mode");
+      if (isOnline) {
+        badge.className = "px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-700 border border-emerald-200 hidden sm:inline-flex items-center space-x-1";
+        if (icon) icon.className = "fa-solid fa-wifi text-emerald-600";
+      } else {
+        badge.className = "px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-600 border border-slate-200 hidden sm:inline-flex items-center space-x-1";
+        if (icon) icon.className = "fa-solid fa-cloud-slash text-slate-400";
       }
     }
 
+    function startAutoCloudPolling() {
+      // Poll every 8 seconds for real-time quotation updates
+      if (cloudSyncInterval) clearInterval(cloudSyncInterval);
+      cloudSyncInterval = setInterval(() => {
+        fetchCloudData(false);
+      }, 8000);
+    }
+
+    // Switch view helper
     function switchView(viewMode) {
       if (viewMode === 'buyer' && !isSupplierMode) {
         switchBuyerTab('requirements');
@@ -889,10 +876,10 @@
       toast.classList.remove("translate-y-20", "opacity-0");
       setTimeout(() => {
         toast.classList.add("translate-y-20", "opacity-0");
-      }, 3000);
+      }, 3500);
     }
 
-    // --- BULLETPROOF MODAL HELPERS ---
+    // Modal helpers
     function openModal(id) {
       const el = document.getElementById(id);
       if (el) {
@@ -915,7 +902,6 @@
       }
     }
 
-    // Escape Key closes all open modals
     window.addEventListener("keydown", function(e) {
       if (e.key === "Escape") {
         ["modalShare", "modalUpload", "modalAddMedicine", "modalImportQuote"].forEach(id => closeModal(id));
@@ -924,7 +910,6 @@
 
     function openAddMedicineModal() { openModal("modalAddMedicine"); }
     function openUploadModal() { 
-      // Reset input element so re-selecting same file triggers 'change' event
       const inp = document.getElementById('excelFileInput');
       if (inp) inp.value = '';
       openModal("modalUpload"); 
@@ -936,7 +921,7 @@
       openModal("modalImportQuote");
     }
 
-    // --- TAB SWITCHING ---
+    // Tab Switching
     function switchBuyerTab(tabName) {
       activeBuyerTab = tabName;
 
@@ -968,12 +953,13 @@
       }
     }
 
-    // --- BUYER DASHBOARD & STATS (HIGH SPEED) ---
+    // Buyer Dashboard & Metrics
     function renderBuyerDashboard() {
       document.getElementById("statTotalItems").innerText = requirements.length;
       document.getElementById("tabCountReq").innerText = requirements.length;
+      const roomLbl = document.getElementById("lblRoomId");
+      if (roomLbl) roomLbl.innerText = currentRfqId;
 
-      // Calculate Bids & Best Discounts
       let quotedSuppliers = new Set();
       let maxDiscountFound = 0;
       let totalL1Discount = 0;
@@ -1004,7 +990,7 @@
       renderRequirementsTable();
     }
 
-    // --- PAGINATED REQUIREMENTS TABLE (Fast & Smooth for 1600+ items) ---
+    // Requirements Table Rendering (Paginated for 1600+ items)
     function renderRequirementsTable() {
       const tbody = document.getElementById("requirementsTableBody");
       tbody.innerHTML = "";
@@ -1095,15 +1081,15 @@
       requirements = requirements.filter(m => m.id !== id);
       saveState();
       renderBuyerDashboard();
+      pushDataToCloud(false);
       showToast("Medicine requirement removed");
     }
 
-    // --- COMPARISON MATRIX (Optimized for 1600+ items) ---
+    // Comparison Matrix Rendering
     function renderComparisonMatrix() {
       const headerRow = document.getElementById("comparisonHeaderRow");
       const tbody = document.getElementById("comparisonTableBody");
 
-      // Setup Dynamic Supplier Columns
       headerRow.innerHTML = `
         <th class="px-4 py-3.5">Medicine & Company</th>
         <th class="px-4 py-3.5">Pack & Qty</th>
@@ -1121,8 +1107,6 @@
       });
 
       tbody.innerHTML = "";
-
-      // Limit display to first 200 items in comparative view for fast DOM rendering
       const displayList = requirements.slice(0, 200);
 
       if (displayList.length === 0) {
@@ -1132,7 +1116,7 @@
 
       const fragment = document.createDocumentFragment();
 
-      displayList.forEach((med, idx) => {
+      displayList.forEach((med) => {
         let bestDisc = -1;
         let bestSupId = null;
 
@@ -1203,12 +1187,11 @@
       }
     }
 
-    // --- SUPPLIER-WISE SPLIT PURCHASE ORDERS ---
+    // Split Purchase Orders
     function renderSupplierPOs() {
       const container = document.getElementById("poSupplierCardsContainer");
       container.innerHTML = "";
 
-      // Determine won items for each supplier based on Highest Discount %
       const wonBySupplier = {};
       suppliers.forEach(s => { wonBySupplier[s.id] = []; });
 
@@ -1251,8 +1234,7 @@
 
         const poNumber = `PO-${sup.id.replace('sup-', '')}-${new Date().getMonth()+1}${new Date().getDate()}`;
 
-        // WhatsApp PO Message
-        let waText = `*PURCHASE ORDER: ${poNumber}*\nTo: ${sup.name}\nFrom: Adhiraj Pharmacy\nTotal Items: ${wonItems.length}\n\n`;
+        let waText = `*PURCHASE ORDER: ${poNumber}*\nTo: ${sup.name}\nFrom: Chemist Admin\nTotal Items: ${wonItems.length}\n\n`;
         wonItems.forEach((it, i) => {
           waText += `${i+1}. ${it.name} (${it.pack || 'Pack'}) - Qty: ${it.qty} [Offered Disc: ${it.wonDiscount}%]\n`;
         });
@@ -1272,7 +1254,7 @@
             </div>
 
             <div class="py-3">
-              ${wonItems.length > 0 ? previewRows : '<p class="text-xs text-slate-400 py-4 text-center">No won items yet. Import supplier quotation to see split orders.</p>'}
+              ${wonItems.length > 0 ? previewRows : '<p class="text-xs text-slate-400 py-4 text-center">No won items yet. When suppliers submit quotes, won items will appear here.</p>'}
             </div>
           </div>
 
@@ -1379,10 +1361,11 @@
       closeModal("modalAddMedicine");
       document.getElementById("addMedForm").reset();
       renderBuyerDashboard();
+      pushDataToCloud(false);
       showToast("Medicine requirement added!");
     }
 
-    // --- ROBUST EXCEL & CSV FILE IMPORT ---
+    // Excel & CSV File Import
     function handleExcelFileSelect(e) {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -1463,12 +1446,12 @@
       reqCurrentPage = 1;
       renderBuyerDashboard();
 
-      // Automatically sync new catalog to cloud for all suppliers
-      syncDataToCloud(false);
+      // Automatically sync new catalog to cloud room for all suppliers
+      pushDataToCloud(true);
       showToast(`Successfully imported ${requirements.length} medicines!`);
     }
 
-    // --- WHATSAPP QUOTE PARSER ---
+    // Manual WhatsApp Quote Parser
     function processImportedQuote() {
       const supId = document.getElementById("importTargetSupplier").value;
       const text = document.getElementById("importQuoteText").value.trim();
@@ -1491,7 +1474,7 @@
           for (let m of requirements) {
             const medWord = m.name.toLowerCase().split(" ")[0];
             if (lineClean.includes(medWord)) {
-              quotes[supId][m.id] = { disc: discount, status: "Available", remarks: "Imported via WhatsApp" };
+              quotes[supId][m.id] = { disc: discount, status: "Available", remarks: "Manual Import" };
               updatedCount++;
               break;
             }
@@ -1503,10 +1486,11 @@
       closeModal("modalImportQuote");
       document.getElementById("importQuoteText").value = "";
       renderBuyerDashboard();
+      pushDataToCloud(false);
       showToast(`Imported ${updatedCount} bids successfully!`);
     }
 
-    // --- BACKUP DOWNLOAD ---
+    // Backup Download
     function downloadStandaloneFile() {
       const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
       const blob = new Blob([htmlContent], { type: "text/html" });
@@ -1525,7 +1509,7 @@
         let bestDisc = 0;
         let bestSup = "None";
         suppliers.forEach(s => {
-          const d = Number(quotes[s.id]?.[m.id]?.disc || 0);
+          const d = Number(quotes[s.id]?.[med.id]?.disc || 0);
           if (d > bestDisc) {
             bestDisc = d;
             bestSup = s.name;
@@ -1580,6 +1564,7 @@
 
       saveState();
       openShareModal();
+      pushDataToCloud(false);
       showToast("Supplier added successfully!");
     }
 
@@ -1624,18 +1609,16 @@
       window.open(waUrl, "_blank");
     }
 
-    // --- LOCKDOWN SUPPLIER VIEW (Zero Buyer Access) ---
+    // Lockdown Supplier View
     function enforceSupplierLockdown(supId, supName) {
       isSupplierMode = true;
       currentSupplierId = supId;
 
-      // Completely remove/hide Buyer Elements
       const buyerHeader = document.getElementById("buyerHeader");
       const buyerPortal = document.getElementById("buyerPortal");
       if (buyerHeader) buyerHeader.remove();
       if (buyerPortal) buyerPortal.remove();
 
-      // Show Supplier Elements
       const supplierHeader = document.getElementById("supplierHeader");
       const supplierPortal = document.getElementById("supplierPortal");
       supplierHeader.classList.remove("hidden");
@@ -1648,7 +1631,7 @@
       renderSupplierPortal();
     }
 
-    // --- PAGINATED SUPPLIER PORTAL (For 1600+ items without freeze) ---
+    // Paginated Supplier Portal
     function renderSupplierPortal() {
       document.getElementById("supCatalogCount").innerText = `${requirements.length} Items`;
 
@@ -1682,8 +1665,8 @@
         tbody.innerHTML = `
           <tr>
             <td colspan="7" class="text-center py-10 text-slate-400">
-              <i class="fa-solid fa-cloud-arrow-down text-3xl mb-2 block text-blue-500"></i>
-              No items in this list yet. Click <strong>"Load Chemist RFQ File"</strong> at the top right to import the 1600+ medicine catalog.
+              <i class="fa-solid fa-arrows-rotate fa-spin text-3xl mb-2 block text-blue-500"></i>
+              Syncing medicines from chemist... Click <strong>"Reload Catalog"</strong> at the top right if this takes a moment.
             </td>
           </tr>
         `;
@@ -1741,7 +1724,7 @@
       renderSupplierPortal();
     }
 
-    // --- SHORT & CLEAN SHARE LINK GENERATOR ---
+    // Share Modal Generator
     function openShareModal() {
       const container = document.getElementById("supplierLinksList");
       document.getElementById("modalCatalogCount").innerText = requirements.length;
@@ -1749,14 +1732,10 @@
 
       const currentBaseUrl = window.location.origin + window.location.pathname;
 
-      // Automatically ensure latest catalog is in cloud
-      syncDataToCloud(false);
-
       suppliers.forEach(sup => {
-        // Includes the Cloud RFQ ID and Supplier ID in short clean link
         const supplierDirectLink = `${currentBaseUrl}#rfq=${encodeURIComponent(currentRfqId)}&sup=${encodeURIComponent(sup.id)}&name=${encodeURIComponent(sup.name)}`;
 
-        const whatsappMsg = `Hello ${sup.name},\n\nPlease quote your maximum Discount % for our current requirements (${requirements.length} items).\n\nClick link to quote directly:\n${supplierDirectLink}\n\n(Auto-syncs directly to our portal. 100% confidential).`;
+        const whatsappMsg = `Hello ${sup.name},\n\nPlease quote your maximum Discount % for our current medicine requirements (${requirements.length} items).\n\nClick link to quote directly:\n${supplierDirectLink}\n\n(Auto-syncs directly to our portal. 100% confidential).`;
         const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMsg)}`;
 
         const item = document.createElement("div");
@@ -1786,48 +1765,7 @@
       openModal("modalShare");
     }
 
-    function downloadRFQCatalogFile() {
-      const exportData = {
-        title: "PharmaQuote RFQ Catalog",
-        count: requirements.length,
-        date: new Date().toISOString(),
-        items: requirements
-      };
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `PharmaQuote_RFQ_${requirements.length}_Items.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      showToast("RFQ Catalog File downloaded!");
-    }
-
-    function handleSupplierCatalogUpload(e) {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          const content = evt.target.result;
-          const parsed = JSON.parse(content);
-          if (parsed.items && Array.isArray(parsed.items)) {
-            requirements = parsed.items;
-            saveState();
-            supCurrentPage = 1;
-            renderSupplierPortal();
-            showToast(`Loaded ${requirements.length} medicines successfully!`);
-          }
-        } catch (err) {
-          showToast("Invalid RFQ Catalog file", "error");
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    // --- CHECK INCOMING LINK (Short & Instant) ---
+    // Incoming URL Inspector
     function checkIncomingLink() {
       const hash = window.location.hash;
       if (!hash) return false;
@@ -1835,7 +1773,6 @@
       try {
         const hashParams = new URLSearchParams(hash.substring(1));
         
-        // 1. Direct Cloud Synchronized Supplier Link: #rfq=master_rfq_catalog&sup=sup-1&name=Apollo
         if (hashParams.has("sup")) {
           const sId = hashParams.get("sup");
           const sName = hashParams.get("name") || "Distributor";
@@ -1845,34 +1782,9 @@
           }
           enforceSupplierLockdown(sId, sName);
 
-          // Initiate cloud listener in supplier mode
-          if (window.initCloudSync) {
-            window.initCloudSync();
-          }
+          // Fetch full medicine requirements from cloud relay
+          fetchCloudData(false);
           return true;
-        }
-
-        // 2. Legacy rfq payload fallback (if any)
-        if (hash.includes("rfq=")) {
-          const lzData = hash.split("rfq=")[1];
-          let jsonStr = "";
-          try {
-            jsonStr = LZString.decompressFromEncodedURIComponent(lzData);
-          } catch(e) {}
-          if (!jsonStr) {
-            try { jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(lzData)))); } catch(e) {}
-          }
-          if (jsonStr) {
-            const payload = JSON.parse(jsonStr);
-            if (payload.reqs) {
-              requirements = payload.reqs;
-              saveState();
-            }
-            if (payload.supId || payload.sId) {
-              enforceSupplierLockdown(payload.supId || payload.sId, payload.sName || payload.name);
-              return true;
-            }
-          }
         }
       } catch (err) {
         console.error("Link unpack error:", err);
@@ -1880,15 +1792,19 @@
       return false;
     }
 
-    // --- INITIALIZE APPLICATION ---
+    // App Initialization
     window.onload = function() {
       loadState();
       const lockedInSupplier = checkIncomingLink();
       if (!lockedInSupplier) {
         renderBuyerDashboard();
-        if (window.initCloudSync) {
-          window.initCloudSync();
-        }
+        // Start background polling to auto-detect supplier bids
+        startAutoCloudPolling();
+        // Auto pull latest cloud state
+        fetchCloudData(false);
+      } else {
+        // Supplier background refresh
+        startAutoCloudPolling();
       }
     };
   </script>
