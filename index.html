@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  <!-- Firebase Direct Modular SDK (No Auth Required) -->
+  <!-- Firebase Direct Modular SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -27,7 +27,7 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
       window._fb = { app, db, doc, setDoc, getDoc, onSnapshot };
-      console.log("Firebase direct connection initialized");
+      console.log("Firebase direct connection active");
     } catch (err) {
       console.error("Firebase init failed:", err);
     }
@@ -51,9 +51,9 @@
       </div>
 
       <div class="flex items-center space-x-2">
-        <div id="cloudStatusBadge" class="flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-          <span id="cloudStatusText">Connecting Cloud...</span>
+        <div id="cloudStatusBadge" class="flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="cloudStatusText">Firebase Connected</span>
         </div>
 
         <button onclick="syncToCloud(true)" class="bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 transition shadow-sm">
@@ -258,7 +258,7 @@
     </div>
   </div>
 
-  <!-- Column Mapping Modal (Guarantees exact quantity match) -->
+  <!-- Column Mapping Modal -->
   <div id="modalMapping" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between">
@@ -278,7 +278,6 @@
         </div>
       </div>
 
-      <!-- Live 3-Row Preview -->
       <div class="bg-slate-50 rounded-2xl p-3 border border-slate-200">
         <p class="text-[11px] font-black uppercase text-slate-400 mb-2 tracking-wider">Live Preview (First 3 Rows):</p>
         <div id="mappingPreviewBox" class="text-xs space-y-1.5 divide-y divide-slate-200"></div>
@@ -335,7 +334,8 @@
 
   <script>
     const AppState = {
-      rfqId: "master_rfq_catalog",
+      rfqId: "master_catalog",
+      rfqVersion: "v1",
       userRole: "buyer",
       currentSupplierId: null,
       currentSupplierName: "",
@@ -352,6 +352,7 @@
       searchQuery: ""
     };
 
+    const CHUNK_SIZE = 200; // Strictly safe for Firestore 1MB limits
     let tempRawExcelRows = [];
 
     window.addEventListener("DOMContentLoaded", async () => {
@@ -368,9 +369,9 @@
       const params = new URLSearchParams(hash);
       const supId = params.get("sup");
       const supName = params.get("name");
-      const rfqId = params.get("rfq");
+      const ver = params.get("v");
 
-      if (rfqId) AppState.rfqId = rfqId;
+      if (ver) AppState.rfqVersion = ver;
 
       if (supId) {
         AppState.userRole = "supplier";
@@ -383,33 +384,44 @@
       }
     }
 
-    // Direct Firestore Listeners (Zero-Auth Blocker)
+    // Direct Firestore Listeners with chunk re-assembly
     async function initFirebaseSync() {
       const checkFbInterval = setInterval(async () => {
         if (window._fb && window._fb.db) {
           clearInterval(checkFbInterval);
-          const { db, doc, onSnapshot } = window._fb;
+          const { db, doc, getDoc, onSnapshot } = window._fb;
 
           try {
             updateCloudBadge("Firebase Live", true);
 
-            // Listen to Catalog Document
-            const rfqRef = doc(db, "rfqs", AppState.rfqId);
-            onSnapshot(rfqRef, (docSnap) => {
+            // Listen to Catalog Master
+            const masterRef = doc(db, "rfqs", AppState.rfqId);
+            onSnapshot(masterRef, async (docSnap) => {
               if (docSnap.exists()) {
                 const data = docSnap.data();
-                if (data.requirements && Array.isArray(data.requirements) && data.requirements.length > 0) {
-                  AppState.requirements = data.requirements;
-                  if (data.suppliers) AppState.suppliers = data.suppliers;
-                  saveLocalBackup();
-                  renderAll();
+                const totalChunks = data.totalChunks || 0;
+                const newVersion = data.version || "v1";
+
+                // Re-download fresh chunks if changed or on supplier phone
+                if (totalChunks > 0 && (AppState.userRole === "supplier" || AppState.requirements.length === 0 || data.totalItems !== AppState.requirements.length)) {
+                  let assembledItems = [];
+                  for (let i = 0; i < totalChunks; i++) {
+                    const cSnap = await getDoc(doc(db, "rfq_chunks", `${AppState.rfqId}_${newVersion}_chunk_${i}`));
+                    if (cSnap.exists()) {
+                      assembledItems = assembledItems.concat(cSnap.data().items || []);
+                    }
+                  }
+                  if (assembledItems.length > 0) {
+                    AppState.requirements = assembledItems;
+                    AppState.rfqVersion = newVersion;
+                    saveLocalBackup();
+                    renderAll();
+                  }
                 }
               }
-            }, (error) => {
-              console.error("Firestore Catalog listener error:", error);
             });
 
-            // Listen to Quotations Document
+            // Listen to Quotations
             const quotesRef = doc(db, "rfq_quotes", AppState.rfqId);
             onSnapshot(quotesRef, (docSnap) => {
               if (docSnap.exists()) {
@@ -420,8 +432,6 @@
                   showToast("New supplier quote auto-synced!", "fa-solid fa-cloud-arrow-down");
                 }
               }
-            }, (error) => {
-              console.error("Firestore Quotes listener error:", error);
             });
 
           } catch (err) {
@@ -432,7 +442,7 @@
       }, 300);
     }
 
-    // Sync to Firestore
+    // Chunked Sync to Firestore
     async function syncToCloud(showNotification = false) {
       if (!window._fb || !window._fb.db) {
         showToast("Firebase connecting...", "fa-solid fa-spinner fa-spin");
@@ -442,29 +452,46 @@
       const { db, doc, setDoc } = window._fb;
       try {
         updateCloudBadge("Syncing...", true);
-        showToast("Saving to cloud...", "fa-solid fa-spinner fa-spin");
+        showToast("Uploading catalog to cloud...", "fa-solid fa-spinner fa-spin");
 
+        // Generate unique version tag to bust cache
+        AppState.rfqVersion = "v_" + Date.now();
+        const totalChunks = Math.ceil(AppState.requirements.length / CHUNK_SIZE);
+
+        for (let i = 0; i < totalChunks; i++) {
+          const chunkItems = AppState.requirements.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+          await setDoc(doc(db, "rfq_chunks", `${AppState.rfqId}_${AppState.rfqVersion}_chunk_${i}`), {
+            chunkIndex: i,
+            version: AppState.rfqVersion,
+            items: chunkItems
+          });
+        }
+
+        // Master Index Doc
         await setDoc(doc(db, "rfqs", AppState.rfqId), {
-          requirements: AppState.requirements,
-          suppliers: AppState.suppliers,
+          version: AppState.rfqVersion,
+          totalChunks: totalChunks,
+          totalItems: AppState.requirements.length,
           lastUpdated: new Date().toISOString()
         });
 
+        // Initialize Quotes Doc
         await setDoc(doc(db, "rfq_quotes", AppState.rfqId), {
           quotes: AppState.quotes,
           lastUpdated: new Date().toISOString()
         });
 
+        saveLocalBackup();
         updateCloudBadge("Firebase Live", true);
-        if (showNotification) showToast("All items synced to cloud successfully!", "fa-solid fa-circle-check");
+        if (showNotification) showToast(`Successfully synced ${AppState.requirements.length} items to Cloud!`, "fa-solid fa-circle-check");
       } catch (err) {
         console.error("Cloud push failed:", err);
         updateCloudBadge("Sync Failed", false);
-        alert("Cloud sync failed. Error: " + err.message);
+        alert("Cloud sync failed: " + err.message);
       }
     }
 
-    // Step 1: Read Excel and Open Mapping Dialog
+    // Step 1: Read Excel
     function previewExcelUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -522,7 +549,7 @@
       event.target.value = "";
     }
 
-    // Step 2: Show Live Preview of parsed Medicine & Qty
+    // Step 2: Show Live Preview
     function updateMappingPreview() {
       const nameIdx = parseInt(document.getElementById("mapColName").value, 10);
       const qtyIdx = parseInt(document.getElementById("mapColQty").value, 10);
@@ -547,7 +574,7 @@
       }
     }
 
-    // Step 3: Apply Mapping and Save to Firebase
+    // Step 3: Apply Mapping
     function applyMappingAndImport() {
       const nameIdx = parseInt(document.getElementById("mapColName").value, 10);
       const qtyIdx = parseInt(document.getElementById("mapColQty").value, 10);
@@ -580,7 +607,7 @@
         renderAll();
         closeModal('modalMapping');
         syncToCloud(true);
-        showToast(`Imported ${newItems.length} medicines with exact quantities!`, "fa-solid fa-circle-check");
+        showToast(`Imported ${newItems.length} medicines!`, "fa-solid fa-circle-check");
       }
     }
 
@@ -615,12 +642,12 @@
       if (window._fb && window._fb.db) {
         const { db, doc, setDoc } = window._fb;
         try {
-          showToast("Submitting quotation to cloud...", "fa-solid fa-spinner fa-spin");
+          showToast("Submitting quotation...", "fa-solid fa-spinner fa-spin");
           await setDoc(doc(db, "rfq_quotes", AppState.rfqId), {
             quotes: AppState.quotes,
             lastUpdated: new Date().toISOString()
           });
-          alert("Quotation successfully submitted! Chemist dashboard has been updated in real time.");
+          alert("Quotation successfully submitted! Chemist dashboard has been updated.");
         } catch (err) {
           alert("Error submitting: " + err.message);
         }
@@ -879,7 +906,7 @@
       const baseUrl = window.location.origin + window.location.pathname;
 
       AppState.suppliers.forEach(s => {
-        const supLink = `${baseUrl}#rfq=${AppState.rfqId}&sup=${s.id}&name=${encodeURIComponent(s.name)}`;
+        const supLink = `${baseUrl}#rfq=${AppState.rfqId}&v=${AppState.rfqVersion}&sup=${s.id}&name=${encodeURIComponent(s.name)}`;
         const whatsappMsg = encodeURIComponent(`Hello ${s.name},\n\nPlease quote your best Discount % for our current medicine requirements (${AppState.requirements.length} items):\n\n👉 Open RFQ Link:\n${supLink}`);
 
         const row = document.createElement("div");
@@ -978,7 +1005,8 @@
       try {
         localStorage.setItem("pharmaquote_backup", JSON.stringify({
           requirements: AppState.requirements,
-          quotes: AppState.quotes
+          quotes: AppState.quotes,
+          version: AppState.rfqVersion
         }));
       } catch (e) {}
     }
@@ -990,6 +1018,7 @@
           const parsed = JSON.parse(raw);
           if (parsed.requirements) AppState.requirements = parsed.requirements;
           if (parsed.quotes) AppState.quotes = parsed.quotes;
+          if (parsed.version) AppState.rfqVersion = parsed.version;
         }
       } catch (e) {}
     }
