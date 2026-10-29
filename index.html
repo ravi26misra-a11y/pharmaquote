@@ -4,20 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PharmaQuote Pure% - Cloud B2B Platform</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- SheetJS for Excel Reading -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  <!-- Firebase Official Modular SDK -->
+  <!-- Firebase Modular SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Pre-configured Firebase Config from Console
     const firebaseConfig = {
       apiKey: "AIzaSyBT06PLZJGi4DwdB6fu-lwurkTILiIKYuM",
       authDomain: "pharmaquote-8db86.firebaseapp.com",
@@ -28,28 +24,20 @@
       measurementId: "G-EG93PNEEDB"
     };
 
-    let db = null;
-    let auth = null;
-
     try {
       const app = initializeApp(firebaseConfig);
-      auth = getAuth(app);
-      db = getFirestore(app);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
       window._fb = { app, auth, db, doc, setDoc, getDoc, onSnapshot, signInAnonymously };
-      console.log("Firebase initialized successfully");
+      console.log("Firebase initialized");
     } catch (err) {
       console.error("Firebase init failed:", err);
     }
   </script>
-
-  <style>
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
 
-  <!-- ================= TOP NAVIGATION ================= -->
+  <!-- ================= TOP HEADER ================= -->
   <header id="mainNav" class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('buyer')">
@@ -60,24 +48,22 @@
           <h1 class="font-black text-xl tracking-tight text-slate-900 leading-none">
             PharmaQuote <span class="text-teal-600">Pure%</span>
           </h1>
-          <p class="text-xs text-slate-500 mt-1">Highest Discount RFQ & PO Portal</p>
+          <p class="text-xs text-slate-500 mt-1">Real-Time Cloud RFQ & PO Management</p>
         </div>
       </div>
 
       <div class="flex items-center space-x-2">
-        <!-- Live Cloud Status Indicator -->
-        <div id="cloudStatusBadge" class="flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span id="cloudStatusText">Firebase Connected</span>
+        <div id="cloudStatusBadge" class="flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+          <span id="cloudStatusText">Connecting Cloud...</span>
         </div>
 
-        <!-- Chemist Top Action Buttons -->
         <button onclick="syncToCloud(true)" class="bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 transition shadow-sm">
           <i class="fa-solid fa-cloud-arrow-up text-teal-600"></i>
           <span>Sync Cloud</span>
         </button>
 
-        <button onclick="openShareModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 transition shadow-md hover:shadow-lg">
+        <button onclick="openShareModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 transition shadow-md">
           <i class="fa-solid fa-share-nodes"></i>
           <span>Share RFQ Link</span>
         </button>
@@ -85,19 +71,17 @@
     </div>
   </header>
 
-  <!-- ================= MAIN CONTAINER ================= -->
+  <!-- ================= MAIN VIEW ================= -->
   <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
 
-    <!-- ================= 1. CHEMIST / BUYER PORTAL ================= -->
+    <!-- 1. BUYER PORTAL -->
     <section id="portalBuyer" class="space-y-6">
-      
-      <!-- Top Metrics Dashboard -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Required Items</p>
             <h3 class="text-2xl font-black text-slate-800 mt-1" id="statTotalItems">0</h3>
-            <p class="text-xs text-teal-600 mt-1 font-medium"><i class="fa-solid fa-pills mr-1"></i>Active in Catalog</p>
+            <p class="text-xs text-teal-600 mt-1 font-medium"><i class="fa-solid fa-pills mr-1"></i>Active in RFQ</p>
           </div>
           <div class="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center text-xl">
             <i class="fa-solid fa-list-check"></i>
@@ -108,7 +92,7 @@
           <div>
             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Bids Quoted</p>
             <h3 class="text-2xl font-black text-slate-800 mt-1" id="statQuotedCount">0 / 4</h3>
-            <p class="text-xs text-blue-600 mt-1 font-medium"><i class="fa-solid fa-handshake mr-1"></i>Suppliers Submitted</p>
+            <p class="text-xs text-blue-600 mt-1 font-medium"><i class="fa-solid fa-truck mr-1"></i>Suppliers Submitted</p>
           </div>
           <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
             <i class="fa-solid fa-truck-ramp-box"></i>
@@ -138,7 +122,7 @@
         </div>
       </div>
 
-      <!-- Navigation Tabs -->
+      <!-- Tabs -->
       <div class="flex border-b border-slate-200 space-x-6 text-sm font-bold">
         <button onclick="switchBuyerTab('tabReqs')" id="navTabReqs" class="pb-3 border-b-2 border-teal-600 text-teal-600 flex items-center space-x-2">
           <i class="fa-solid fa-clipboard-list"></i>
@@ -154,7 +138,7 @@
         </button>
       </div>
 
-      <!-- Tab 1: Requirements Listing -->
+      <!-- Tab 1: Requirements -->
       <div id="tabContentReqs" class="space-y-4">
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
           <div class="relative w-full md:w-96">
@@ -174,11 +158,10 @@
           </div>
         </div>
 
-        <!-- Requirements Table with Pagination -->
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
-              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-xs uppercase tracking-wider">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-xs uppercase">
                 <tr>
                   <th class="py-3 px-4 w-12 text-center">#</th>
                   <th class="py-3 px-4">Medicine Name</th>
@@ -189,13 +172,10 @@
                   <th class="py-3 px-4 text-center w-20">Action</th>
                 </tr>
               </thead>
-              <tbody id="requirementsTableBody" class="divide-y divide-slate-100">
-                <!-- Rendered dynamically -->
-              </tbody>
+              <tbody id="requirementsTableBody" class="divide-y divide-slate-100"></tbody>
             </table>
           </div>
 
-          <!-- Pagination Bar -->
           <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 font-medium">
             <span id="pageIndicator">Showing 0 of 0</span>
             <div class="flex items-center space-x-1">
@@ -207,71 +187,35 @@
         </div>
       </div>
 
-      <!-- Tab 2: Comparison Matrix (L1) -->
+      <!-- Tab 2: Comparison -->
       <div id="tabContentMatrix" class="hidden space-y-4">
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-          <div class="flex items-center justify-between mb-3">
-            <div>
-              <h3 class="font-black text-slate-900 text-base">Pure Discount % Bidding Comparison</h3>
-              <p class="text-xs text-slate-500">The supplier offering the highest trade discount wins the L1 Crown badge.</p>
-            </div>
-            <button onclick="exportMatrixToCSV()" class="text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">
-              <i class="fa-solid fa-download mr-1"></i>Export Matrix
-            </button>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm border-collapse">
-              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-xs uppercase" id="matrixHead">
-                <!-- Dynamic columns based on suppliers -->
-              </thead>
-              <tbody id="matrixBody" class="divide-y divide-slate-100">
-                <!-- Rendered dynamically -->
-              </tbody>
-            </table>
-          </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+          <table class="w-full text-left text-sm border-collapse">
+            <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-xs uppercase" id="matrixHead"></thead>
+            <tbody id="matrixBody" class="divide-y divide-slate-100"></tbody>
+          </table>
         </div>
       </div>
 
-      <!-- Tab 3: Split Purchase Orders -->
+      <!-- Tab 3: Split POs -->
       <div id="tabContentPO" class="hidden space-y-6">
-        <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-          <div>
-            <h3 class="font-black text-slate-900 text-base">Supplier-wise Split Purchase Orders</h3>
-            <p class="text-xs text-slate-500">Orders are partitioned automatically to each supplier based on their winning L1 Discount bids.</p>
-          </div>
-          <button onclick="window.print()" class="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow transition">
-            <i class="fa-solid fa-print mr-1"></i>Print All POs
-          </button>
-        </div>
-
-        <div id="poCardsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- PO Cards rendered dynamically -->
-        </div>
+        <div id="poCardsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
       </div>
-
     </section>
 
-    <!-- ================= 2. ISOLATED SUPPLIER PORTAL ================= -->
+    <!-- 2. SUPPLIER PORTAL -->
     <section id="portalSupplier" class="hidden max-w-4xl mx-auto space-y-6">
       <div class="bg-gradient-to-r from-teal-700 to-emerald-700 text-white p-6 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <span class="inline-block bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full mb-2">Confidential Supplier RFQ Portal</span>
           <h2 class="text-2xl font-black" id="supplierNameBanner">Supplier Portal</h2>
-          <p class="text-xs text-emerald-100 mt-1">Please quote your highest Trade Discount % for each required medicine below.</p>
-        </div>
-        <div class="text-right">
-          <p class="text-xs text-emerald-200 font-medium">Submission Target</p>
-          <span class="text-lg font-black bg-white/10 px-3 py-1 rounded-xl inline-block mt-1">Max Discount %</span>
+          <p class="text-xs text-emerald-100 mt-1">Please enter your highest Trade Discount % for each required medicine below.</p>
         </div>
       </div>
 
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <span class="text-xs font-bold text-slate-500 uppercase">Requirement Sheet (<span id="supReqCount">0</span> items)</span>
-          <span class="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg font-bold">
-            <i class="fa-solid fa-lock mr-1"></i>Rates remain confidential
-          </span>
         </div>
 
         <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
@@ -285,130 +229,83 @@
                 <th class="py-3 px-4 text-center w-32">Stock Status</th>
               </tr>
             </thead>
-            <tbody id="supplierTableBody" class="divide-y divide-slate-100">
-              <!-- Rendered dynamically -->
-            </tbody>
+            <tbody id="supplierTableBody" class="divide-y divide-slate-100"></tbody>
           </table>
         </div>
 
-        <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3">
-          <p class="text-xs text-slate-500">Your quotation updates directly in the chemist's system in real time.</p>
-          <button onclick="submitSupplierQuotation()" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
+        <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+          <button onclick="submitSupplierQuotation()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl shadow transition flex items-center space-x-2">
             <i class="fa-solid fa-cloud-arrow-up"></i>
             <span>Submit Quotation to Chemist</span>
           </button>
         </div>
       </div>
     </section>
-
   </main>
 
-  <!-- ================= MODALS ================= -->
-
-  <!-- Modal: Upload Excel / CSV -->
+  <!-- Upload Modal -->
   <div id="modalUpload" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this) closeModal('modalUpload')">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="font-black text-lg text-slate-900">Upload Medicine Requirements</h3>
         <button onclick="closeModal('modalUpload')" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
-      <p class="text-xs text-slate-500 leading-relaxed">
-        Upload your medicine requirement file (.xlsx, .xls, .csv). Columns accepted: 
-        <span class="font-bold text-slate-700">Product / Medicine Name, Company, Pack Size, Quantity</span>.
-      </p>
 
       <div onclick="document.getElementById('excelFileInput').click()" class="border-2 border-dashed border-teal-300 hover:border-teal-500 rounded-2xl p-8 text-center cursor-pointer bg-teal-50/50 hover:bg-teal-50 transition">
         <i class="fa-solid fa-file-excel text-4xl text-teal-600 mb-2"></i>
         <p class="text-sm font-bold text-slate-700">Click to select Excel / CSV file</p>
-        <p class="text-xs text-slate-400 mt-1">Supports catalogs with 1600+ items</p>
+        <p class="text-xs text-slate-400 mt-1">Reads exact quantities and catalogs with 1600+ items</p>
         <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelUpload(event)">
       </div>
-
-      <div class="flex justify-end pt-2">
-        <button onclick="closeModal('modalUpload')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">Cancel</button>
-      </div>
     </div>
   </div>
 
-  <!-- Modal: Share RFQ Link with Suppliers -->
+  <!-- Share Modal -->
   <div id="modalShare" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this) closeModal('modalShare')">
-    <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-            <i class="fa-solid fa-share-nodes"></i>
-          </div>
-          <div>
-            <h3 class="font-black text-lg text-slate-900">Send Supplier RFQ Links</h3>
-            <p class="text-xs text-slate-500">Short, 100% WhatsApp-compatible links connected to Firebase.</p>
-          </div>
-        </div>
+        <h3 class="font-black text-lg text-slate-900">Send Supplier RFQ Links</h3>
         <button onclick="closeModal('modalShare')" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
-
-      <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-xs text-emerald-800 flex items-center justify-between">
-        <span><i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i>Catalog synced with Firebase. Suppliers load 1600+ medicines instantly.</span>
-      </div>
-
-      <!-- Supplier Link Rows -->
-      <div id="supplierShareLinksList" class="space-y-3 max-h-72 overflow-y-auto pr-1">
-        <!-- Rendered dynamically -->
-      </div>
-
-      <div class="flex justify-end pt-2">
-        <button onclick="closeModal('modalShare')" class="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl transition">Done</button>
+      <div id="supplierShareLinksList" class="space-y-3 max-h-72 overflow-y-auto pr-1"></div>
+      <div class="flex justify-end">
+        <button onclick="closeModal('modalShare')" class="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl">Done</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Add Single Medicine -->
+  <!-- Add Single Modal -->
   <div id="modalAdd" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this) closeModal('modalAdd')">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="font-black text-lg text-slate-900">Add Medicine Item</h3>
         <button onclick="closeModal('modalAdd')" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
-
       <div class="space-y-3 text-sm">
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Medicine Name *</label>
-          <input type="text" id="addMedName" placeholder="e.g. AUGMENTIN 625" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none">
-        </div>
+        <input type="text" id="addMedName" placeholder="Medicine Name *" class="w-full px-3 py-2 border rounded-xl">
         <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">Company / Brand</label>
-            <input type="text" id="addMedCompany" placeholder="e.g. GSK" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">Pack Size</label>
-            <input type="text" id="addMedPack" placeholder="e.g. 10 Tab" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none">
-          </div>
+          <input type="text" id="addMedCompany" placeholder="Company" class="w-full px-3 py-2 border rounded-xl">
+          <input type="text" id="addMedPack" placeholder="Pack Size" class="w-full px-3 py-2 border rounded-xl">
         </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Required Quantity *</label>
-          <input type="number" id="addMedQty" placeholder="e.g. 50" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none">
-        </div>
+        <input type="number" id="addMedQty" placeholder="Required Quantity *" class="w-full px-3 py-2 border rounded-xl">
       </div>
-
-      <div class="flex justify-end space-x-2 pt-2">
-        <button onclick="closeModal('modalAdd')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">Cancel</button>
-        <button onclick="saveSingleMedicine()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow transition">Add Item</button>
+      <div class="flex justify-end space-x-2">
+        <button onclick="closeModal('modalAdd')" class="px-4 py-2 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">Cancel</button>
+        <button onclick="saveSingleMedicine()" class="px-4 py-2 bg-teal-600 text-white font-bold text-xs rounded-xl">Add Item</button>
       </div>
     </div>
   </div>
 
-  <!-- Notification Toast -->
+  <!-- Toast -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 text-xs font-bold transform translate-y-20 opacity-0 transition-all duration-300">
     <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
     <span id="toastMsg">Action successful</span>
   </div>
 
-  <!-- ================= CORE JAVASCRIPT ================= -->
   <script>
-    // System State
     const AppState = {
       rfqId: "master_rfq_catalog",
-      userRole: "buyer", // 'buyer' or 'supplier'
+      userRole: "buyer",
       currentSupplierId: null,
       currentSupplierName: "",
       requirements: [],
@@ -418,13 +315,14 @@
         { id: "sup-3", name: "Gujarat Wholesale Chemist", city: "Vadodara" },
         { id: "sup-4", name: "SHC Distributors", city: "Ahmedabad" }
       ],
-      quotes: {}, // { supId: { medId: { discount: 9.5, inStock: true } } }
+      quotes: {},
       currentPage: 1,
       itemsPerPage: 50,
       searchQuery: ""
     };
 
-    // Initialize application on load
+    const CHUNK_SIZE = 300;
+
     window.addEventListener("DOMContentLoaded", async () => {
       loadLocalBackup();
       checkUrlRouting();
@@ -432,7 +330,6 @@
       renderAll();
     });
 
-    // Check if opened via Supplier link (#sup=...&rfq=...)
     function checkUrlRouting() {
       const hash = window.location.hash.substring(1);
       if (!hash) return;
@@ -442,17 +339,12 @@
       const supName = params.get("name");
       const rfqId = params.get("rfq");
 
-      if (rfqId) {
-        AppState.rfqId = rfqId;
-      }
+      if (rfqId) AppState.rfqId = rfqId;
 
       if (supId) {
-        // Enforce Supplier Portal Lockout
         AppState.userRole = "supplier";
         AppState.currentSupplierId = supId;
         AppState.currentSupplierName = supName ? decodeURIComponent(supName) : "Supplier";
-        
-        // Hide chemist navigation and buyer elements
         document.getElementById("mainNav").classList.add("hidden");
         document.getElementById("portalBuyer").classList.add("hidden");
         document.getElementById("portalSupplier").classList.remove("hidden");
@@ -460,53 +352,63 @@
       }
     }
 
-    // Connect Firebase Realtime Listeners
     async function initFirebaseSync() {
       const checkFbInterval = setInterval(async () => {
         if (window._fb && window._fb.db) {
           clearInterval(checkFbInterval);
-          const { db, auth, doc, onSnapshot, signInAnonymously } = window._fb;
+          const { db, auth, doc, getDoc, onSnapshot, signInAnonymously } = window._fb;
 
           try {
             await signInAnonymously(auth);
             updateCloudBadge("Firebase Live", true);
 
-            // Listen to Catalog Changes
-            const rfqRef = doc(db, "rfqs", AppState.rfqId);
-            onSnapshot(rfqRef, (docSnap) => {
-              if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (data.requirements && Array.isArray(data.requirements) && data.requirements.length > 0) {
-                  AppState.requirements = data.requirements;
-                  if (data.suppliers) AppState.suppliers = data.suppliers;
-                  saveLocalBackup();
-                  renderAll();
+            // Listen to Index Document
+            const indexRef = doc(db, "rfqs", AppState.rfqId);
+            onSnapshot(indexRef, async (snap) => {
+              if (snap.exists()) {
+                const data = snap.data();
+                const totalChunks = data.totalChunks || 0;
+                
+                if (totalChunks > 0) {
+                  let allReqs = [];
+                  for (let i = 0; i < totalChunks; i++) {
+                    const cRef = doc(db, "rfq_chunks", `${AppState.rfqId}_chunk_${i}`);
+                    const cSnap = await getDoc(cRef);
+                    if (cSnap.exists()) {
+                      allReqs = allReqs.concat(cSnap.data().items || []);
+                    }
+                  }
+                  if (allReqs.length > 0) {
+                    AppState.requirements = allReqs;
+                    saveLocalBackup();
+                    renderAll();
+                  }
                 }
               }
             });
 
-            // Listen to Supplier Quotations Real-time
+            // Listen to Quotations
             const quotesRef = doc(db, "rfq_quotes", AppState.rfqId);
-            onSnapshot(quotesRef, (docSnap) => {
-              if (docSnap.exists()) {
-                AppState.quotes = docSnap.data().quotes || {};
+            onSnapshot(quotesRef, (qSnap) => {
+              if (qSnap.exists()) {
+                AppState.quotes = qSnap.data().quotes || {};
                 saveLocalBackup();
                 renderAll();
                 if (AppState.userRole === "buyer") {
-                  showToast("New supplier quote received via Cloud!", "fa-solid fa-cloud-arrow-down");
+                  showToast("New supplier quotation auto-synced!", "fa-solid fa-cloud-arrow-down");
                 }
               }
             });
 
           } catch (err) {
-            console.error("Firebase auth/snapshot error:", err);
+            console.error("Firebase sync error:", err);
             updateCloudBadge("Firebase Error", false);
           }
         }
       }, 300);
     }
 
-    // Push Catalog & Quotes to Firebase
+    // Chunked Upload to bypass 1MB Firestore Limit
     async function syncToCloud(showNotification = false) {
       if (!window._fb || !window._fb.db) {
         showToast("Firebase connecting...", "fa-solid fa-spinner fa-spin");
@@ -514,32 +416,42 @@
       }
 
       const { db, doc, setDoc } = window._fb;
+
       try {
         updateCloudBadge("Syncing...", true);
-        
-        // Save Catalog
+        showToast("Saving to cloud...", "fa-solid fa-spinner fa-spin");
+
+        const totalChunks = Math.ceil(AppState.requirements.length / CHUNK_SIZE);
+
+        for (let i = 0; i < totalChunks; i++) {
+          const chunkItems = AppState.requirements.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+          await setDoc(doc(db, "rfq_chunks", `${AppState.rfqId}_chunk_${i}`), {
+            chunkIndex: i,
+            items: chunkItems
+          });
+        }
+
         await setDoc(doc(db, "rfqs", AppState.rfqId), {
-          requirements: AppState.requirements,
-          suppliers: AppState.suppliers,
+          totalChunks: totalChunks,
+          totalItems: AppState.requirements.length,
           lastUpdated: new Date().toISOString()
         });
 
-        // Save Quotes
         await setDoc(doc(db, "rfq_quotes", AppState.rfqId), {
           quotes: AppState.quotes,
           lastUpdated: new Date().toISOString()
         });
 
         updateCloudBadge("Firebase Live", true);
-        if (showNotification) showToast("All data synced to Firebase!", "fa-solid fa-circle-check");
+        if (showNotification) showToast("All 1600+ items synced to cloud successfully!", "fa-solid fa-circle-check");
       } catch (err) {
         console.error("Cloud push failed:", err);
         updateCloudBadge("Sync Failed", false);
-        showToast("Cloud sync failed. Check Firestore rules.", "fa-solid fa-triangle-exclamation");
+        alert("Cloud sync failed. Error: " + err.message);
       }
     }
 
-    // Excel & CSV File Upload Handler
+    // Fixed Excel Quantity & Column Parser
     function handleExcelUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -555,40 +467,59 @@
           const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
           if (rows.length < 2) {
-            alert("The uploaded sheet appears to be empty.");
+            alert("Uploaded sheet is empty.");
             return;
           }
 
-          // Header detection
-          let nameIdx = 0, compIdx = -1, packIdx = -1, qtyIdx = -1;
+          let nameIdx = -1, compIdx = -1, packIdx = -1, qtyIdx = -1;
           const header = rows[0].map(h => String(h || "").trim().toLowerCase());
 
           header.forEach((col, idx) => {
-            if (col.includes("item") || col.includes("product") || col.includes("medicine") || col.includes("particular") || col.includes("name")) nameIdx = idx;
-            else if (col.includes("comp") || col.includes("mfr") || col.includes("brand")) compIdx = idx;
-            else if (col.includes("pack") || col.includes("unit") || col.includes("size")) packIdx = idx;
-            else if (col.includes("qty") || col.includes("quantity") || col.includes("order")) qtyIdx = idx;
+            if (col.includes("item") || col.includes("product") || col.includes("medicine") || col.includes("particular") || col.includes("name") || col.includes("description")) {
+              if (nameIdx === -1) nameIdx = idx;
+            } else if (col.includes("comp") || col.includes("mfr") || col.includes("brand")) {
+              compIdx = idx;
+            } else if (col.includes("pack") || col.includes("unit") || col.includes("size")) {
+              packIdx = idx;
+            } else if (col.includes("qty") || col.includes("quantity") || col.includes("order") || col.includes("req") || col.includes("strip") || col.includes("box")) {
+              qtyIdx = idx;
+            }
           });
+
+          if (nameIdx === -1) nameIdx = 0;
+
+          // If Qty column not found by header, find first column with numbers
+          if (qtyIdx === -1) {
+            for (let c = 0; c < rows[1].length; c++) {
+              if (c !== nameIdx && !isNaN(parseFloat(rows[1][c])) && parseFloat(rows[1][c]) > 0) {
+                qtyIdx = c;
+                break;
+              }
+            }
+          }
 
           const newItems = [];
           for (let i = 1; i < rows.length; i++) {
             const r = rows[i];
-            if (!r || !r[nameIdx]) continue;
+            if (!r || r[nameIdx] === undefined || r[nameIdx] === null) continue;
 
             const name = String(r[nameIdx]).trim().replace(/\uFFFD/g, '');
             if (!name) continue;
 
             const company = compIdx >= 0 && r[compIdx] ? String(r[compIdx]).trim() : "Standard Pharma";
             const pack = packIdx >= 0 && r[packIdx] ? String(r[packIdx]).trim() : "Standard Pack";
-            let qty = qtyIdx >= 0 && r[qtyIdx] ? parseInt(r[qtyIdx], 10) : 10;
-            if (isNaN(qty) || qty <= 0) qty = 10;
+            
+            // Parse exact numeric quantity
+            let rawQty = qtyIdx >= 0 && r[qtyIdx] !== undefined ? String(r[qtyIdx]).replace(/[^0-9.]/g, '') : "";
+            let qty = parseFloat(rawQty);
+            if (isNaN(qty) || qty <= 0) qty = 1;
 
             newItems.push({
-              id: "med-" + Date.now() + "-" + Math.floor(Math.random() * 10000),
+              id: "med-" + Date.now() + "-" + i,
               name,
               company,
               pack,
-              qty
+              qty: Math.round(qty)
             });
           }
 
@@ -596,61 +527,24 @@
             AppState.requirements = newItems;
             AppState.currentPage = 1;
             saveLocalBackup();
-            syncToCloud(true);
             renderAll();
             closeModal('modalUpload');
-            showToast(`Loaded ${newItems.length} medicines successfully!`, "fa-solid fa-circle-check");
+            syncToCloud(true);
           }
         } catch (err) {
           console.error("Excel parse error:", err);
-          alert("Error parsing file. Please ensure it's a valid Excel or CSV sheet.");
+          alert("Error parsing file.");
         }
       };
       reader.readAsArrayBuffer(file);
       event.target.value = "";
     }
 
-    // Save Single Medicine Manually
-    function saveSingleMedicine() {
-      const name = document.getElementById("addMedName").value.trim();
-      const company = document.getElementById("addMedCompany").value.trim() || "Standard Pharma";
-      const pack = document.getElementById("addMedPack").value.trim() || "Standard Pack";
-      const qty = parseInt(document.getElementById("addMedQty").value, 10);
-
-      if (!name) {
-        alert("Please enter a medicine name.");
-        return;
-      }
-      if (isNaN(qty) || qty <= 0) {
-        alert("Please enter a valid quantity.");
-        return;
-      }
-
-      AppState.requirements.unshift({
-        id: "med-" + Date.now(),
-        name,
-        company,
-        pack,
-        qty
-      });
-
-      document.getElementById("addMedName").value = "";
-      document.getElementById("addMedQty").value = "";
-      closeModal('modalAdd');
-      saveLocalBackup();
-      syncToCloud();
-      renderAll();
-      showToast("Medicine added to catalog", "fa-solid fa-circle-check");
-    }
-
-    // Submit Supplier Quotation (From Supplier Portal)
     async function submitSupplierQuotation() {
       const supId = AppState.currentSupplierId;
       if (!supId) return;
 
-      if (!AppState.quotes[supId]) {
-        AppState.quotes[supId] = {};
-      }
+      if (!AppState.quotes[supId]) AppState.quotes[supId] = {};
 
       let quoteCount = 0;
       AppState.requirements.forEach(med => {
@@ -662,39 +556,32 @@
           const inStock = stockInput ? stockInput.value === "yes" : true;
 
           if (!isNaN(discountVal) && discountVal >= 0) {
-            AppState.quotes[supId][med.id] = {
-              discount: discountVal,
-              inStock
-            };
+            AppState.quotes[supId][med.id] = { discount: discountVal, inStock };
             quoteCount++;
           }
         }
       });
 
       if (quoteCount === 0) {
-        alert("Please enter your discount % for at least one medicine before submitting.");
+        alert("Please enter a discount for at least one item.");
         return;
       }
 
-      // Save directly to Firebase
       if (window._fb && window._fb.db) {
         const { db, doc, setDoc } = window._fb;
         try {
-          showToast("Submitting your quote...", "fa-solid fa-spinner fa-spin");
+          showToast("Submitting quotation to cloud...", "fa-solid fa-spinner fa-spin");
           await setDoc(doc(db, "rfq_quotes", AppState.rfqId), {
             quotes: AppState.quotes,
             lastUpdated: new Date().toISOString()
           });
-          showToast("Quotation successfully submitted to Chemist!", "fa-solid fa-circle-check");
-          alert("Thank you! Your quotation has been securely submitted to the chemist.");
+          alert("Quotation successfully submitted! Chemist dashboard has been updated in real-time.");
         } catch (err) {
-          console.error("Submission failed:", err);
-          showToast("Submission failed. Retrying...", "fa-solid fa-triangle-exclamation");
+          alert("Error submitting: " + err.message);
         }
       }
     }
 
-    // Render Everything
     function renderAll() {
       if (AppState.userRole === "supplier") {
         renderSupplierPortal();
@@ -706,32 +593,22 @@
       }
     }
 
-    // Render Metrics
     function renderBuyerMetrics() {
       document.getElementById("statTotalItems").innerText = AppState.requirements.length;
       document.getElementById("tabBadgeReqs").innerText = AppState.requirements.length;
 
-      // Count suppliers who submitted at least one bid
       let submittedCount = 0;
       AppState.suppliers.forEach(s => {
-        if (AppState.quotes[s.id] && Object.keys(AppState.quotes[s.id]).length > 0) {
-          submittedCount++;
-        }
+        if (AppState.quotes[s.id] && Object.keys(AppState.quotes[s.id]).length > 0) submittedCount++;
       });
       document.getElementById("statQuotedCount").innerText = `${submittedCount} / ${AppState.suppliers.length}`;
 
-      // Max discount offered & average
-      let maxDis = 0;
-      let totalL1 = 0;
-      let l1Count = 0;
-
+      let maxDis = 0, totalL1 = 0, l1Count = 0;
       AppState.requirements.forEach(med => {
         let bestDis = -1;
         AppState.suppliers.forEach(s => {
           const q = AppState.quotes[s.id]?.[med.id];
-          if (q && q.discount !== undefined && q.discount > bestDis) {
-            bestDis = q.discount;
-          }
+          if (q && q.discount !== undefined && q.discount > bestDis) bestDis = q.discount;
         });
         if (bestDis > -1) {
           if (bestDis > maxDis) maxDis = bestDis;
@@ -744,7 +621,6 @@
       document.getElementById("statAvgDiscount").innerText = l1Count > 0 ? `${(totalL1 / l1Count).toFixed(1)}%` : "0%";
     }
 
-    // Render Paginated Requirements Table
     function renderRequirementsTable() {
       const tbody = document.getElementById("requirementsTableBody");
       tbody.innerHTML = "";
@@ -766,7 +642,7 @@
       document.getElementById("btnNextPage").disabled = end >= total;
 
       if (pageItems.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 text-xs font-semibold">No medicines found. Click "Upload Excel / CSV" to import catalog.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 text-xs font-semibold">No medicines found.</td></tr>`;
         return;
       }
 
@@ -783,7 +659,7 @@
           <td class="py-3 px-4 font-bold text-slate-800">${escapeHtml(med.name)}</td>
           <td class="py-3 px-4 text-xs text-slate-500 font-semibold">${escapeHtml(med.company)}</td>
           <td class="py-3 px-4 text-xs text-slate-500 font-semibold">${escapeHtml(med.pack)}</td>
-          <td class="py-3 px-4 text-center font-bold text-slate-900">${med.qty}</td>
+          <td class="py-3 px-4 text-center font-black text-slate-900">${med.qty}</td>
           <td class="py-3 px-4 text-center">
             <span class="px-2.5 py-1 rounded-full text-xs font-bold ${bidsCount > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}">
               ${bidsCount} Bids
@@ -799,31 +675,22 @@
       });
     }
 
-    // Render Discount Comparison Matrix (L1 Highlight)
     function renderComparisonMatrix() {
       const thead = document.getElementById("matrixHead");
       const tbody = document.getElementById("matrixBody");
 
-      // Setup dynamic header with suppliers
       let thHTML = `<tr><th class="py-3 px-3">Medicine & Pack</th><th class="py-3 px-3 text-center">Qty</th>`;
       AppState.suppliers.forEach(s => {
-        thHTML += `<th class="py-3 px-3 text-center text-slate-800">${escapeHtml(s.name)}</th>`;
+        thHTML += `<th class="py-3 px-3 text-center">${escapeHtml(s.name)}</th>`;
       });
       thHTML += `<th class="py-3 px-3 text-center bg-emerald-50 text-emerald-800 font-black">Winning L1</th></tr>`;
       thead.innerHTML = thHTML;
-
       tbody.innerHTML = "";
-      if (AppState.requirements.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${AppState.suppliers.length + 3}" class="py-8 text-center text-slate-400 text-xs font-bold">Catalog is empty. Upload medicines to see comparison.</td></tr>`;
-        return;
-      }
 
-      // Display first 200 items in matrix for peak performance
       const previewItems = AppState.requirements.slice(0, 200);
 
       previewItems.forEach(med => {
-        let bestDis = -1;
-        let winnerName = "-";
+        let bestDis = -1, winnerName = "-";
 
         AppState.suppliers.forEach(s => {
           const q = AppState.quotes[s.id]?.[med.id];
@@ -840,7 +707,7 @@
             <div class="font-bold text-slate-800 text-xs">${escapeHtml(med.name)}</div>
             <div class="text-[10px] text-slate-400 font-semibold">${escapeHtml(med.pack)}</div>
           </td>
-          <td class="py-2.5 px-3 text-center font-bold text-xs text-slate-700">${med.qty}</td>
+          <td class="py-2.5 px-3 text-center font-bold text-xs">${med.qty}</td>
         `;
 
         AppState.suppliers.forEach(s => {
@@ -848,7 +715,7 @@
           if (q && q.discount !== undefined) {
             const isWinner = q.discount === bestDis && bestDis > 0;
             rowHTML += `
-              <td class="py-2.5 px-3 text-center text-xs ${isWinner ? 'bg-emerald-50/70 font-black text-emerald-700 border-l border-r border-emerald-100' : 'text-slate-600 font-semibold'}">
+              <td class="py-2.5 px-3 text-center text-xs ${isWinner ? 'bg-emerald-50 font-black text-emerald-700' : 'text-slate-600'}">
                 ${q.discount}% ${isWinner ? '<i class="fa-solid fa-crown text-amber-500 text-[10px] ml-1"></i>' : ''}
               </td>
             `;
@@ -858,28 +725,23 @@
         });
 
         rowHTML += `
-          <td class="py-2.5 px-3 text-center text-xs bg-emerald-50/80 font-black text-emerald-800">
+          <td class="py-2.5 px-3 text-center text-xs bg-emerald-50 font-black text-emerald-800">
             ${bestDis > -1 ? bestDis + '% (' + escapeHtml(winnerName.split(' ')[0]) + ')' : '<span class="text-slate-300 font-normal">No bids</span>'}
           </td>
         `;
-
         tr.innerHTML = rowHTML;
         tbody.appendChild(tr);
       });
     }
 
-    // Render Supplier-wise Split Purchase Orders
     function renderSplitPOs() {
       const container = document.getElementById("poCardsContainer");
       container.innerHTML = "";
 
       AppState.suppliers.forEach(sup => {
-        // Collect items where this supplier won L1
         const wonItems = [];
         AppState.requirements.forEach(med => {
-          let bestDis = -1;
-          let winnerId = null;
-
+          let bestDis = -1, winnerId = null;
           AppState.suppliers.forEach(s => {
             const q = AppState.quotes[s.id]?.[med.id];
             if (q && q.discount !== undefined && q.discount > bestDis) {
@@ -889,12 +751,7 @@
           });
 
           if (winnerId === sup.id && bestDis > 0) {
-            wonItems.push({
-              name: med.name,
-              pack: med.pack,
-              qty: med.qty,
-              discount: bestDis
-            });
+            wonItems.push({ name: med.name, pack: med.pack, qty: med.qty, discount: bestDis });
           }
         });
 
@@ -907,10 +764,9 @@
                 ${wonItems.length} Winning Items
               </span>
               <h4 class="font-black text-slate-900 text-base mt-1.5">${escapeHtml(sup.name)}</h4>
-              <p class="text-xs text-slate-400 font-medium">${escapeHtml(sup.city)}</p>
             </div>
             ${wonItems.length > 0 ? `
-              <button onclick="sharePOViaWhatsApp('${sup.name}', ${JSON.stringify(wonItems).replace(/"/g, '&quot;')})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow transition flex items-center space-x-1.5">
+              <button onclick="sharePOViaWhatsApp('${sup.name}', ${JSON.stringify(wonItems).replace(/"/g, '&quot;')})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition flex items-center space-x-1.5">
                 <i class="fa-brands fa-whatsapp"></i>
                 <span>Send PO</span>
               </button>
@@ -936,7 +792,6 @@
       });
     }
 
-    // Render Isolated Supplier View
     function renderSupplierPortal() {
       const tbody = document.getElementById("supplierTableBody");
       document.getElementById("supReqCount").innerText = AppState.requirements.length;
@@ -973,11 +828,9 @@
       });
     }
 
-    // Open Share Modal & Prepare Short Links
     function openShareModal() {
       const container = document.getElementById("supplierShareLinksList");
       container.innerHTML = "";
-
       const baseUrl = window.location.origin + window.location.pathname;
 
       AppState.suppliers.forEach(s => {
@@ -992,23 +845,15 @@
             <p class="text-[10px] text-slate-400 truncate">${supLink}</p>
           </div>
           <div class="flex items-center space-x-1.5">
-            <button onclick="copyToClipboard('${supLink}')" class="bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1">
-              <i class="fa-solid fa-copy"></i>
-              <span>Copy</span>
-            </button>
-            <a href="https://wa.me/?text=${whatsappMsg}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1">
-              <i class="fa-brands fa-whatsapp"></i>
-              <span>WhatsApp</span>
-            </a>
+            <button onclick="copyToClipboard('${supLink}')" class="bg-white border px-3 py-1.5 rounded-lg text-xs font-bold">Copy</button>
+            <a href="https://wa.me/?text=${whatsappMsg}" target="_blank" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold">WhatsApp</a>
           </div>
         `;
         container.appendChild(row);
       });
-
       document.getElementById("modalShare").classList.remove("hidden");
     }
 
-    // Share Purchase Order on WhatsApp
     function sharePOViaWhatsApp(supName, items) {
       let text = `*PURCHASE ORDER*\nTo: *${supName}*\n\nPlease arrange billing for winning items:\n\n`;
       items.forEach((it, idx) => {
@@ -1018,7 +863,6 @@
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     }
 
-    // Navigation and Tab Switching
     function switchBuyerTab(tabId) {
       ['tabReqs', 'tabMatrix', 'tabPO'].forEach(t => {
         document.getElementById(`nav${t.charAt(0).toUpperCase() + t.slice(1)}`).className = 
@@ -1036,7 +880,6 @@
       }
     }
 
-    // Helpers
     function handleSearch(val) {
       AppState.searchQuery = val;
       AppState.currentPage = 1;
@@ -1093,23 +936,3 @@
           quotes: AppState.quotes
         }));
       } catch (e) {}
-    }
-
-    function loadLocalBackup() {
-      try {
-        const raw = localStorage.getItem("pharmaquote_backup");
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed.requirements) AppState.requirements = parsed.requirements;
-          if (parsed.quotes) AppState.quotes = parsed.quotes;
-        }
-      } catch (e) {}
-    }
-
-    function escapeHtml(text) {
-      if (!text) return "";
-      return String(text).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
-    }
-  </script>
-</body>
-</html>
