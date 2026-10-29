@@ -65,7 +65,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
-        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('buyer')">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchBuyerTab('requirements')">
           <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-brand-600 to-teal-700 flex items-center justify-center text-white shadow-md shadow-brand-600/20">
             <i class="fa-solid fa-percent text-lg font-bold"></i>
           </div>
@@ -73,9 +73,9 @@
             <div class="flex items-center space-x-2">
               <span class="font-extrabold text-lg text-slate-900 tracking-tight">PharmaQuote <span class="text-brand-600">Pure%</span></span>
               <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-emerald-100 text-emerald-800 border border-emerald-200">Admin / Chemist</span>
-              <span id="cloudStatusBadge" class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-700 border border-emerald-200 hidden sm:inline-flex items-center space-x-1">
-                <i id="cloudStatusIcon" class="fa-solid fa-wifi text-emerald-600"></i>
-                <span id="cloudStatusText">Cloud Online</span>
+              <span id="cloudStatusBadge" class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-600 border border-slate-200 hidden sm:inline-flex items-center space-x-1 cursor-pointer" onclick="openFirebaseSettingsModal()">
+                <i id="cloudStatusIcon" class="fa-solid fa-cloud text-slate-400"></i>
+                <span id="cloudStatusText">Connecting Cloud...</span>
               </span>
             </div>
             <p class="text-[11px] text-slate-500 hidden sm:block">Highest Supplier Discounts & Auto-Split Purchase Orders</p>
@@ -84,13 +84,17 @@
 
         <!-- Action Items -->
         <div class="flex items-center space-x-3">
-          <button id="btnManualSync" onclick="pushDataToCloud(true)" title="Push latest catalog & fetch latest bids" class="flex items-center space-x-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200 cursor-pointer">
+          <button id="btnManualSync" onclick="manualSyncTrigger()" title="Sync with Firebase Cloud" class="flex items-center space-x-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200 cursor-pointer">
             <i class="fa-solid fa-arrows-rotate mr-1 text-blue-600" id="syncSpinner"></i>
             <span>Sync Cloud</span>
           </button>
+          <button onclick="openFirebaseSettingsModal()" title="Firebase Cloud Setup" class="flex items-center space-x-1 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-semibold border border-amber-200 cursor-pointer">
+            <i class="fa-solid fa-gear mr-1 text-amber-600"></i>
+            <span>Cloud Config</span>
+          </button>
           <button onclick="downloadStandaloneFile()" title="Download Backup HTML" class="hidden md:flex items-center space-x-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer">
             <i class="fa-solid fa-download mr-1"></i>
-            <span>Backup App</span>
+            <span>Backup</span>
           </button>
           <button onclick="openShareModal()" class="px-4 py-2 bg-gradient-to-r from-brand-600 to-teal-600 hover:from-brand-700 hover:to-teal-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-brand-600/20 flex items-center space-x-2 transition-all cursor-pointer">
             <i class="fa-solid fa-share-nodes"></i>
@@ -114,11 +118,7 @@
         </div>
       </div>
       <div class="flex items-center space-x-2">
-        <button onclick="fetchCloudData(true)" class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-lg flex items-center space-x-1 cursor-pointer">
-          <i class="fa-solid fa-rotate mr-1"></i>
-          <span>Reload Catalog</span>
-        </button>
-        <span class="text-[11px] bg-blue-800 text-blue-100 border border-blue-600 px-2.5 py-1 rounded-full hidden sm:flex items-center space-x-1">
+        <span class="text-[11px] bg-blue-800 text-blue-100 border border-blue-600 px-2.5 py-1 rounded-full flex items-center space-x-1">
           <i class="fa-solid fa-shield-halved text-emerald-400"></i>
           <span>100% Confidential</span>
         </span>
@@ -204,8 +204,8 @@
           </button>
         </div>
         <div class="text-xs text-slate-500 flex items-center space-x-1.5">
-          <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Room: <strong id="lblRoomId" class="font-mono text-slate-800">default</strong></span>
+          <span id="rfqRoomDot" class="inline-block w-2 h-2 rounded-full bg-slate-400"></span>
+          <span>RFQ Room: <strong id="lblRoomId" class="font-mono text-slate-800">master_rfq</strong></span>
         </div>
       </div>
 
@@ -227,7 +227,7 @@
               <i class="fa-solid fa-plus"></i>
               <span>Add Single</span>
             </button>
-            <button onclick="openImportQuoteModal()" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs sm:text-sm font-semibold rounded-lg flex items-center space-x-1 cursor-pointer" title="Import quotes received on WhatsApp">
+            <button onclick="openImportQuoteModal()" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs sm:text-sm font-semibold rounded-lg flex items-center space-x-1 cursor-pointer">
               <i class="fa-solid fa-file-import"></i>
               <span>Import Manual Quote</span>
             </button>
@@ -342,7 +342,7 @@
           </div>
           <div class="flex items-center space-x-2">
             <span class="text-xs font-semibold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
-              <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Auto-saves in browser
+              <i class="fa-solid fa-cloud mr-1"></i> Live Firebase Connected
             </span>
           </div>
         </div>
@@ -378,12 +378,9 @@
             Total Quoted: <span class="font-extrabold text-slate-900" id="supSummaryCount">0 / 0</span> Items
           </div>
           <div class="flex items-center space-x-3">
-            <button onclick="submitQuotationDirectlyToCloud()" id="btnSubmitCloudQuote" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-blue-600/20 flex items-center space-x-2 cursor-pointer transition-all">
+            <button onclick="submitQuotationDirectlyToFirebase()" id="btnSubmitCloudQuote" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-blue-600/20 flex items-center space-x-2 cursor-pointer transition-all">
               <i class="fa-solid fa-cloud-arrow-up text-base"></i>
               <span>Submit Quotation to Chemist (Auto-Sync)</span>
-            </button>
-            <button onclick="sendQuotationViaWhatsApp()" title="Alternative WhatsApp Submit" class="p-2.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl border border-slate-300 text-xs font-semibold cursor-pointer">
-              <i class="fa-brands fa-whatsapp text-lg"></i>
             </button>
           </div>
         </div>
@@ -396,6 +393,66 @@
   <!-- MODALS                                                                    -->
   <!-- ========================================================================= -->
 
+  <!-- MODAL: FIREBASE CONFIGURATION -->
+  <div id="modalFirebase" onclick="handleBackdropClick(event, 'modalFirebase')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col relative" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-fire"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">Firebase Real-time Cloud Setup</h3>
+            <p class="text-xs text-slate-500">Connect your free Firebase Firestore database</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modalFirebase')" type="button" class="text-slate-400 hover:text-slate-700 text-xl w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="py-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar text-xs">
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 leading-relaxed">
+          <strong>Steps to get free config:</strong>
+          <ol class="list-decimal pl-4 mt-1 space-y-1">
+            <li>Go to <a href="https://console.firebase.google.com" target="_blank" class="underline font-bold text-blue-700">console.firebase.google.com</a> &amp; create a project.</li>
+            <li>Click <strong>Firestore Database</strong> &rarr; <strong>Create Database</strong> (Test mode).</li>
+            <li>Click Project Settings (⚙️ icon) &rarr; Web App (&lt;/&gt;) &rarr; Copy the config object.</li>
+          </ol>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Paste Firebase Config JSON or JavaScript snippet:</label>
+          <textarea id="firebaseConfigInput" rows="6" placeholder='const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "mypharma.firebaseapp.com",
+  projectId: "mypharma",
+  storageBucket: "mypharma.appspot.com",
+  messagingSenderId: "...",
+  appId: "..."
+};' class="w-full font-mono text-[11px] p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Current RFQ Room Name:</label>
+          <input type="text" id="rfqRoomInput" value="master_rfq" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-slate-800">
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+        <button onclick="testFirebaseConnection()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold cursor-pointer">
+          Test Connection
+        </button>
+        <div class="flex space-x-2">
+          <button onclick="closeModal('modalFirebase')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">Cancel</button>
+          <button onclick="saveFirebaseSettings()" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-sm cursor-pointer">
+            Save &amp; Connect
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: SHARE RFQ WITH SUPPLIERS -->
   <div id="modalShare" onclick="handleBackdropClick(event, 'modalShare')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col relative" onclick="event.stopPropagation()">
@@ -405,11 +462,11 @@
             <i class="fa-solid fa-share-nodes"></i>
           </div>
           <div>
-            <h3 class="font-bold text-slate-900 text-base">Share Cloud RFQ Link (<span id="modalCatalogCount">0</span> Items)</h3>
-            <p class="text-xs text-slate-500">Auto-syncs via Cloud Relay. No manual copying needed!</p>
+            <h3 class="font-bold text-slate-900 text-base">Share Firebase RFQ Link (<span id="modalCatalogCount">0</span> Items)</h3>
+            <p class="text-xs text-slate-500">Auto-syncs via Firebase Firestore. 100% confidential per distributor.</p>
           </div>
         </div>
-        <button onclick="closeModal('modalShare')" type="button" aria-label="Close" class="text-slate-400 hover:text-slate-700 text-xl w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center cursor-pointer transition-colors">
+        <button onclick="closeModal('modalShare')" type="button" class="text-slate-400 hover:text-slate-700 text-xl w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center cursor-pointer">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -417,17 +474,17 @@
       <div class="py-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
         <div class="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
           <div>
-            <p class="text-xs font-bold text-blue-950"><i class="fa-solid fa-cloud-arrow-up mr-1 text-blue-600"></i> Cloud Auto-Sync is Active</p>
-            <p class="text-[11px] text-blue-800 mt-0.5">Suppliers open this link and submit rates; their discounts will reflect automatically on your screen.</p>
+            <p class="text-xs font-bold text-blue-950"><i class="fa-solid fa-cloud-arrow-up mr-1 text-blue-600"></i> Firebase Live Sync</p>
+            <p class="text-[11px] text-blue-800 mt-0.5">Suppliers open link &rarr; Fill discount % &rarr; Submit &rarr; Reflects live on your screen!</p>
           </div>
-          <button onclick="pushDataToCloud(true)" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1 cursor-pointer">
+          <button onclick="manualSyncTrigger()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1 cursor-pointer">
             <i class="fa-solid fa-arrows-rotate mr-1"></i>
-            <span>Push Now</span>
+            <span>Push Catalog</span>
           </button>
         </div>
 
         <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-700">Suppliers:</span>
+          <span class="text-xs font-bold text-slate-700">Distributors:</span>
           <button onclick="addNewSupplierPrompt()" class="text-xs font-bold text-brand-700 hover:text-brand-800 flex items-center space-x-1 cursor-pointer">
             <i class="fa-solid fa-user-plus"></i>
             <span>+ Add Supplier</span>
@@ -438,7 +495,7 @@
       </div>
 
       <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-        <p class="text-[11px] text-slate-400 italic">Short links will directly open the confidential portal on any phone.</p>
+        <p class="text-[11px] text-slate-400 italic">Short links will directly open the confidential portal on phone.</p>
         <button onclick="closeModal('modalShare')" type="button" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold cursor-pointer">
           Done
         </button>
@@ -459,7 +516,7 @@
             <p class="text-xs text-slate-500">Import bulk medicine list from Excel (.xlsx, .xls) or CSV</p>
           </div>
         </div>
-        <button onclick="closeModal('modalUpload')" type="button" aria-label="Close" class="text-slate-400 hover:text-slate-700 text-xl w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center cursor-pointer transition-colors">
+        <button onclick="closeModal('modalUpload')" type="button" class="text-slate-400 hover:text-slate-700 text-xl w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center cursor-pointer">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -519,7 +576,7 @@
           <i class="fa-solid fa-pills text-brand-600"></i>
           <span>Add Medicine Requirement</span>
         </h3>
-        <button onclick="closeModal('modalAddMedicine')" type="button" aria-label="Close" class="text-slate-400 hover:text-slate-700 text-xl w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center cursor-pointer transition-colors">
+        <button onclick="closeModal('modalAddMedicine')" type="button" class="text-slate-400 hover:text-slate-700 text-xl w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center cursor-pointer">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -559,7 +616,7 @@
           <i class="fa-solid fa-file-import text-blue-600"></i>
           <span>Import Supplier Quotation Manually</span>
         </h3>
-        <button onclick="closeModal('modalImportQuote')" type="button" aria-label="Close" class="text-slate-400 hover:text-slate-700 text-xl w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center cursor-pointer transition-colors">
+        <button onclick="closeModal('modalImportQuote')" type="button" class="text-slate-400 hover:text-slate-700 text-xl w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center cursor-pointer">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -586,7 +643,301 @@
   <div id="printContainer" class="p-8 font-sans hidden"></div>
 
   <!-- ========================================================================= -->
-  <!-- JAVASCRIPT APPLICATION CORE LOGIC                                         -->
+  <!-- FIREBASE MODULE & APPLICATION CORE ENGINE                                 -->
+  <!-- ========================================================================= -->
+  <script type="module">
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Global references
+    window.fbApp = null;
+    window.fbAuth = null;
+    window.fbDb = null;
+    window.isFirebaseReady = false;
+
+    // Hardcoded Default Config (Can be configured via UI modal without changing code)
+    const STORAGE_KEY_FBCONFIG = "pharma_fb_config_v1";
+    let defaultFirebaseConfig = {
+      apiKey: "",
+      authDomain: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: ""
+    };
+
+    // Environment Injected variables support
+    if (typeof __firebase_config !== "undefined" && __firebase_config) {
+      try {
+        defaultFirebaseConfig = JSON.parse(__firebase_config);
+      } catch (e) {}
+    }
+
+    // App ID scoping
+    window.appId = typeof __app_id !== 'undefined' ? __app_id : 'pharmaquote-app';
+
+    // Initialize Firebase
+    window.initFirebase = async function() {
+      try {
+        let savedCfgStr = localStorage.getItem(STORAGE_KEY_FBCONFIG);
+        let activeConfig = defaultFirebaseConfig;
+
+        if (savedCfgStr) {
+          try {
+            activeConfig = JSON.parse(savedCfgStr);
+          } catch(e) {}
+        }
+
+        if (!activeConfig.apiKey || !activeConfig.projectId) {
+          updateCloudBadge(false, "Config Required");
+          return false;
+        }
+
+        if (!getApps().length) {
+          window.fbApp = initializeApp(activeConfig);
+        } else {
+          window.fbApp = getApps()[0];
+        }
+
+        window.fbAuth = getAuth(window.fbApp);
+        window.fbDb = getFirestore(window.fbApp);
+
+        // Authenticate anonymously
+        await signInAnonymously(window.fbAuth);
+        window.isFirebaseReady = true;
+        updateCloudBadge(true, "Firebase Connected");
+        
+        // Start live listeners
+        setupFirestoreRealtimeSync();
+        return true;
+      } catch (err) {
+        console.error("Firebase init failed:", err);
+        updateCloudBadge(false, "Connection Error");
+        return false;
+      }
+    };
+
+    // Firestore Path Setup
+    function getRfqDocRef(rfqId) {
+      // RULE 1: /artifacts/{appId}/public/data/{collectionName}/{documentId}
+      return doc(window.fbDb, 'artifacts', window.appId, 'public', 'data', 'rfqs', rfqId);
+    }
+
+    // Real-time Firestore sync
+    function setupFirestoreRealtimeSync() {
+      if (!window.isFirebaseReady || !window.fbDb) return;
+
+      const rfqDoc = getRfqDocRef(window.currentRfqId);
+
+      onSnapshot(rfqDoc, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data) {
+            // If Supplier: Update requirements from chemist
+            if (window.isSupplierMode) {
+              if (Array.isArray(data.items) && data.items.length > 0) {
+                window.requirements = data.items;
+                window.saveState();
+                window.renderSupplierPortal();
+              }
+            } 
+            // If Chemist: Sync incoming quotes from suppliers
+            else {
+              if (data.quotes) {
+                let hasChange = false;
+                Object.keys(data.quotes).forEach(supId => {
+                  window.quotes[supId] = window.quotes[supId] || {};
+                  const incBids = data.quotes[supId];
+                  Object.keys(incBids).forEach(medId => {
+                    if (!window.quotes[supId][medId] || window.quotes[supId][medId].disc !== incBids[medId].disc) {
+                      window.quotes[supId][medId] = incBids[medId];
+                      hasChange = true;
+                    }
+                  });
+                });
+
+                if (hasChange) {
+                  window.saveState();
+                  window.renderBuyerDashboard();
+                  if (window.activeBuyerTab === 'comparison') window.renderComparisonMatrix();
+                  if (window.activeBuyerTab === 'posplit') window.renderSupplierPOs();
+                  window.showToast("Distributor quotation auto-synced live!", "success");
+                }
+              }
+            }
+          }
+        }
+      }, (error) => {
+        console.warn("Firestore sync error:", error);
+      });
+    }
+
+    // Push Catalog to Firestore
+    window.pushCatalogToFirestore = async function(showToastMsg = false) {
+      if (!window.isFirebaseReady) {
+        window.openFirebaseSettingsModal();
+        window.showToast("Please enter Firebase Config first", "error");
+        return;
+      }
+
+      const spinner = document.getElementById("syncSpinner");
+      if (spinner) spinner.classList.add("fa-spin");
+
+      try {
+        const rfqDoc = getRfqDocRef(window.currentRfqId);
+        
+        // Chunk items into 1 array object
+        await setDoc(rfqDoc, {
+          rfqId: window.currentRfqId,
+          updatedAt: new Date().toISOString(),
+          totalItems: window.requirements.length,
+          items: window.requirements,
+          suppliers: window.suppliers,
+          quotes: window.quotes
+        }, { merge: true });
+
+        updateCloudBadge(true, "Catalog Synced");
+        if (showToastMsg) window.showToast(`Synced ${window.requirements.length} medicines live to Firebase!`);
+      } catch (err) {
+        console.error("Firestore push failed:", err);
+        window.showToast("Failed to push to Firebase: " + err.message, "error");
+      } finally {
+        if (spinner) spinner.classList.remove("fa-spin");
+      }
+    };
+
+    // Supplier submit discount directly to Firestore
+    window.submitQuotationDirectlyToFirebase = async function() {
+      if (!window.isFirebaseReady) {
+        window.showToast("Firebase Cloud is not connected yet.", "error");
+        return;
+      }
+
+      const supQuotes = window.quotes[window.currentSupplierId] || {};
+      let quotedLines = 0;
+      window.requirements.forEach(m => {
+        if (supQuotes[m.id] && supQuotes[m.id].disc > 0) quotedLines++;
+      });
+
+      if (quotedLines === 0) {
+        window.showToast("Please enter at least one discount % before submitting", "error");
+        return;
+      }
+
+      const btn = document.getElementById("btnSubmitCloudQuote");
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Submitting to Cloud...`;
+      }
+
+      try {
+        const rfqDoc = getRfqDocRef(window.currentRfqId);
+        
+        // Read current state to preserve other quotes
+        const snap = await getDoc(rfqDoc);
+        let curData = snap.exists() ? snap.data() : { quotes: {} };
+        curData.quotes = curData.quotes || {};
+        curData.quotes[window.currentSupplierId] = supQuotes;
+        curData.lastQuotedSupplier = window.currentSupplierId;
+        curData.lastQuoteTime = new Date().toISOString();
+
+        await setDoc(rfqDoc, curData, { merge: true });
+        window.showToast("Quotation submitted directly to Chemist portal!", "success");
+      } catch (err) {
+        console.error(err);
+        window.showToast("Submit error: " + err.message, "error");
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Submitted Successfully`;
+          setTimeout(() => {
+            btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-base"></i><span>Submit Quotation to Chemist (Auto-Sync)</span>`;
+          }, 4000);
+        }
+      }
+    };
+
+    function updateCloudBadge(isOnline, text) {
+      const badge = document.getElementById("cloudStatusBadge");
+      const icon = document.getElementById("cloudStatusIcon");
+      const lbl = document.getElementById("cloudStatusText");
+      const dot = document.getElementById("rfqRoomDot");
+
+      if (!badge || !lbl) return;
+
+      lbl.innerText = text || (isOnline ? "Firebase Online" : "Offline Mode");
+      if (isOnline) {
+        badge.className = "px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-700 border border-emerald-200 hidden sm:inline-flex items-center space-x-1 cursor-pointer";
+        if (icon) icon.className = "fa-solid fa-cloud text-emerald-600";
+        if (dot) dot.className = "inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+      } else {
+        badge.className = "px-2 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-800 border border-amber-200 hidden sm:inline-flex items-center space-x-1 cursor-pointer";
+        if (icon) icon.className = "fa-solid fa-cloud-slash text-amber-500";
+        if (dot) dot.className = "inline-block w-2 h-2 rounded-full bg-amber-400";
+      }
+    }
+
+    window.saveFirebaseSettings = async function() {
+      const txt = document.getElementById("firebaseConfigInput").value.trim();
+      const room = document.getElementById("rfqRoomInput").value.trim() || "master_rfq";
+
+      if (!txt) {
+        window.showToast("Please paste your Firebase Config snippet", "error");
+        return;
+      }
+
+      try {
+        let parsed = null;
+        if (txt.includes("{") && txt.includes("}")) {
+          const jsonSub = txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1);
+          // Clean JS keys if unquoted
+          const cleanJson = jsonSub
+            .replace(/([a-zA-Z0-9_]+):/g, '"$1":')
+            .replace(/'/g, '"')
+            .replace(/,\s*}/g, '}');
+          parsed = JSON.parse(cleanJson);
+        }
+
+        if (!parsed || !parsed.apiKey) {
+          window.showToast("Invalid Firebase Config format", "error");
+          return;
+        }
+
+        localStorage.setItem(STORAGE_KEY_FBCONFIG, JSON.stringify(parsed));
+        window.currentRfqId = room;
+        localStorage.setItem("pharma_current_rfq_id", room);
+        document.getElementById("lblRoomId").innerText = room;
+
+        window.closeModal("modalFirebase");
+        window.showToast("Saved! Initializing Firebase...", "success");
+
+        const ok = await window.initFirebase();
+        if (ok) {
+          window.pushCatalogToFirestore(true);
+        }
+      } catch (err) {
+        window.showToast("Config error: " + err.message, "error");
+      }
+    };
+
+    window.testFirebaseConnection = async function() {
+      const ok = await window.initFirebase();
+      if (ok) {
+        window.showToast("Connected to Firebase Firestore successfully!", "success");
+      } else {
+        window.showToast("Connection failed. Check API Key & Project ID", "error");
+      }
+    };
+
+    // Auto initialize on load
+    window.addEventListener("DOMContentLoaded", () => {
+      window.initFirebase();
+    });
+  </script>
+
+  <!-- ========================================================================= -->
+  <!-- STANDARD APP LOGIC (REQUIREMENTS, COMPARISON, SPLIT POS)                 -->
   <!-- ========================================================================= -->
   <script>
     function sanitizeText(str) {
@@ -597,27 +948,20 @@
         .trim();
     }
 
-    const STORAGE_KEY_REQS = "pharma_discount_reqs_v5";
-    const STORAGE_KEY_SUPS = "pharma_discount_sups_v5";
-    const STORAGE_KEY_QUOTES = "pharma_discount_quotes_v5";
+    const STORAGE_KEY_REQS = "pharma_discount_reqs_v6";
+    const STORAGE_KEY_SUPS = "pharma_discount_sups_v6";
+    const STORAGE_KEY_QUOTES = "pharma_discount_quotes_v6";
 
-    let requirements = [];
-    let suppliers = [];
-    let quotes = {};
-    let isSupplierMode = false;
-    let currentSupplierId = "sup-1";
-    let activeBuyerTab = "requirements";
+    window.requirements = [];
+    window.suppliers = [];
+    window.quotes = {};
+    window.isSupplierMode = false;
+    window.currentSupplierId = "sup-1";
+    window.activeBuyerTab = "requirements";
     let pendingUploadList = [];
-    
-    // Unique Cloud RFQ Session ID
-    let currentRfqId = "rfq_master";
-    
-    // Zero-Setup Cloud Relay Endpoint
-    // Uses KV persistent JSON store: api.npoint.io
-    const CLOUD_SYNC_ENDPOINT = "https://api.npoint.io/";
-    let cloudSyncInterval = null;
+    window.currentRfqId = "master_rfq";
 
-    // Pagination state for 1600+ items
+    // Pagination for 1600+ medicines
     let reqCurrentPage = 1;
     let supCurrentPage = 1;
     const REQ_PAGE_SIZE = 50;
@@ -630,238 +974,49 @@
         const storedQuotes = localStorage.getItem(STORAGE_KEY_QUOTES);
         const storedRfqId = localStorage.getItem("pharma_current_rfq_id");
 
-        requirements = storedReqs ? JSON.parse(storedReqs) : [];
-        suppliers = storedSups ? JSON.parse(storedSups) : [
+        window.requirements = storedReqs ? JSON.parse(storedReqs) : [];
+        window.suppliers = storedSups ? JSON.parse(storedSups) : [
           { id: "sup-1", name: "Apollo Pharma Distributors", contact: "+91 98000 11111", city: "Ahmedabad" },
           { id: "sup-2", name: "Balaji Medicine Syndicate", contact: "+91 98980 22222", city: "Surat" },
           { id: "sup-3", name: "Gujarat Wholesale Chemist", contact: "+91 97000 33333", city: "Vadodara" },
           { id: "sup-4", name: "SHC Pharma", contact: "+91 98980 44444", city: "Rajkot" }
         ];
-        quotes = storedQuotes ? JSON.parse(storedQuotes) : {};
-        if (storedRfqId) currentRfqId = storedRfqId;
+        window.quotes = storedQuotes ? JSON.parse(storedQuotes) : {};
+        if (storedRfqId) window.currentRfqId = storedRfqId;
       } catch (e) {
-        requirements = [];
-        suppliers = [];
-        quotes = {};
+        window.requirements = [];
+        window.suppliers = [];
+        window.quotes = {};
       }
     }
 
-    function saveState() {
+    window.saveState = function() {
       try {
-        localStorage.setItem(STORAGE_KEY_REQS, JSON.stringify(requirements));
-        localStorage.setItem(STORAGE_KEY_SUPS, JSON.stringify(suppliers));
-        localStorage.setItem(STORAGE_KEY_QUOTES, JSON.stringify(quotes));
-        localStorage.setItem("pharma_current_rfq_id", currentRfqId);
+        localStorage.setItem(STORAGE_KEY_REQS, JSON.stringify(window.requirements));
+        localStorage.setItem(STORAGE_KEY_SUPS, JSON.stringify(window.suppliers));
+        localStorage.setItem(STORAGE_KEY_QUOTES, JSON.stringify(window.quotes));
+        localStorage.setItem("pharma_current_rfq_id", window.currentRfqId);
       } catch (e) {
-        console.warn("Storage quota warning", e);
+        console.warn("Local storage quota limit", e);
+      }
+    };
+
+    function manualSyncTrigger() {
+      if (typeof window.pushCatalogToFirestore === 'function') {
+        window.pushCatalogToFirestore(true);
       }
     }
 
-    // =========================================================================
-    // ZERO-SETUP CLOUD RELAY ENGINE (Solution 2: No account / key needed)
-    // =========================================================================
-    
-    // Cloud Room Identifier based on URL or local storage
-    function getCloudBinUrl() {
-      // Uses a deterministic public room hash
-      return `https://kvdb.io/4y2iR9ZgH5wLw6Z3Y8E6jW/${currentRfqId}`;
+    function openFirebaseSettingsModal() {
+      const cfg = localStorage.getItem("pharma_fb_config_v1");
+      if (cfg) {
+        document.getElementById("firebaseConfigInput").value = cfg;
+      }
+      document.getElementById("rfqRoomInput").value = window.currentRfqId || "master_rfq";
+      openModal("modalFirebase");
     }
 
-    // Chemist pushes full catalog and supplier list to cloud
-    async function pushDataToCloud(showToastMsg = false) {
-      const spinner = document.getElementById("syncSpinner");
-      if (spinner) spinner.classList.add("fa-spin");
-
-      const payload = {
-        rfqId: currentRfqId,
-        updatedAt: new Date().toISOString(),
-        totalItems: requirements.length,
-        items: requirements,
-        suppliers: suppliers,
-        quotes: quotes
-      };
-
-      try {
-        const response = await fetch(getCloudBinUrl(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        if (response.ok) {
-          updateCloudStatus(true, "Cloud Synced");
-          if (showToastMsg) showToast(`Synced ${requirements.length} items to cloud!`, "success");
-        } else {
-          // Fallback to secondary relay if kvdb is busy
-          fallbackCloudSync(payload, showToastMsg);
-        }
-      } catch (err) {
-        fallbackCloudSync(payload, showToastMsg);
-      } finally {
-        if (spinner) spinner.classList.remove("fa-spin");
-      }
-    }
-
-    // Fallback sync via standard JSON storage
-    async function fallbackCloudSync(payload, showToastMsg) {
-      try {
-        localStorage.setItem(`cloud_mirror_${currentRfqId}`, JSON.stringify(payload));
-        updateCloudStatus(true, "Cloud Active");
-        if (showToastMsg) showToast("Data saved & synced online!", "success");
-      } catch (e) {
-        updateCloudStatus(false, "Offline");
-      }
-    }
-
-    // Supplier or Chemist fetches latest cloud room state
-    async function fetchCloudData(showToastMsg = false) {
-      try {
-        const response = await fetch(getCloudBinUrl(), {
-          method: "GET",
-          headers: { "Accept": "application/json" }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.items) {
-            let updated = false;
-
-            // 1. If Supplier: Load medicines uploaded by Chemist
-            if (isSupplierMode) {
-              if (Array.isArray(data.items) && data.items.length > 0) {
-                requirements = data.items;
-                updated = true;
-                saveState();
-                renderSupplierPortal();
-                if (showToastMsg) showToast(`Loaded ${requirements.length} medicines live!`, "success");
-              }
-            } 
-            // 2. If Chemist: Auto-merge supplier bids
-            else {
-              if (data.quotes) {
-                let hasNewBid = false;
-                Object.keys(data.quotes).forEach(supId => {
-                  quotes[supId] = quotes[supId] || {};
-                  const incBids = data.quotes[supId];
-                  Object.keys(incBids).forEach(medId => {
-                    if (!quotes[supId][medId] || quotes[supId][medId].disc !== incBids[medId].disc) {
-                      quotes[supId][medId] = incBids[medId];
-                      hasNewBid = true;
-                    }
-                  });
-                });
-
-                if (hasNewBid) {
-                  saveState();
-                  renderBuyerDashboard();
-                  if (activeBuyerTab === 'comparison') renderComparisonMatrix();
-                  if (activeBuyerTab === 'posplit') renderSupplierPOs();
-                  showToast("New supplier quotation auto-synced live!", "success");
-                }
-              }
-            }
-            updateCloudStatus(true, "Cloud Connected");
-          }
-        }
-      } catch (err) {
-        console.warn("Background cloud poll:", err);
-      }
-    }
-
-    // Supplier submits their quotation directly to the Cloud Room
-    async function submitQuotationDirectlyToCloud() {
-      const supQuotes = quotes[currentSupplierId] || {};
-      let quotedLines = 0;
-
-      requirements.forEach(m => {
-        if (supQuotes[m.id] && supQuotes[m.id].disc > 0) {
-          quotedLines++;
-        }
-      });
-
-      if (quotedLines === 0) {
-        showToast("Please enter at least one discount % before submitting", "error");
-        return;
-      }
-
-      const btn = document.getElementById("btnSubmitCloudQuote");
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Submitting...`;
-      }
-
-      try {
-        // Fetch current cloud state, merge my bids, and push back
-        let currentCloudData = { items: requirements, suppliers: suppliers, quotes: quotes };
-        try {
-          const res = await fetch(getCloudBinUrl());
-          if (res.ok) {
-            currentCloudData = await res.json();
-          }
-        } catch(e) {}
-
-        currentCloudData.quotes = currentCloudData.quotes || {};
-        currentCloudData.quotes[currentSupplierId] = supQuotes;
-        currentCloudData.lastQuotedSupplier = currentSupplierId;
-        currentCloudData.lastQuoteTime = new Date().toISOString();
-
-        const postRes = await fetch(getCloudBinUrl(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(currentCloudData)
-        });
-
-        if (postRes.ok) {
-          showToast("Quotation submitted directly to Chemist portal!", "success");
-        } else {
-          showToast("Submitted! Chemist screen will auto-sync.", "success");
-        }
-      } catch (err) {
-        showToast("Quotation saved! Chemist will see updates.", "success");
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Submitted Successfully`;
-          setTimeout(() => {
-            btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-base"></i><span>Submit Quotation to Chemist (Auto-Sync)</span>`;
-          }, 4000);
-        }
-      }
-    }
-
-    function updateCloudStatus(isOnline, text) {
-      const badge = document.getElementById("cloudStatusBadge");
-      const icon = document.getElementById("cloudStatusIcon");
-      const lbl = document.getElementById("cloudStatusText");
-
-      if (!badge || !lbl) return;
-
-      lbl.innerText = text || (isOnline ? "Cloud Online" : "Offline Mode");
-      if (isOnline) {
-        badge.className = "px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-700 border border-emerald-200 hidden sm:inline-flex items-center space-x-1";
-        if (icon) icon.className = "fa-solid fa-wifi text-emerald-600";
-      } else {
-        badge.className = "px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-600 border border-slate-200 hidden sm:inline-flex items-center space-x-1";
-        if (icon) icon.className = "fa-solid fa-cloud-slash text-slate-400";
-      }
-    }
-
-    function startAutoCloudPolling() {
-      // Poll every 8 seconds for real-time quotation updates
-      if (cloudSyncInterval) clearInterval(cloudSyncInterval);
-      cloudSyncInterval = setInterval(() => {
-        fetchCloudData(false);
-      }, 8000);
-    }
-
-    // Switch view helper
-    function switchView(viewMode) {
-      if (viewMode === 'buyer' && !isSupplierMode) {
-        switchBuyerTab('requirements');
-      }
-    }
-
-    function showToast(msg, type = "success") {
+    window.showToast = function(msg, type = "success") {
       const toast = document.getElementById("toast");
       const icon = document.getElementById("toastIcon");
       const toastMsg = document.getElementById("toastMsg");
@@ -877,9 +1032,8 @@
       setTimeout(() => {
         toast.classList.add("translate-y-20", "opacity-0");
       }, 3500);
-    }
+    };
 
-    // Modal helpers
     function openModal(id) {
       const el = document.getElementById(id);
       if (el) {
@@ -904,7 +1058,7 @@
 
     window.addEventListener("keydown", function(e) {
       if (e.key === "Escape") {
-        ["modalShare", "modalUpload", "modalAddMedicine", "modalImportQuote"].forEach(id => closeModal(id));
+        ["modalShare", "modalUpload", "modalAddMedicine", "modalImportQuote", "modalFirebase"].forEach(id => closeModal(id));
       }
     });
 
@@ -917,13 +1071,12 @@
 
     function openImportQuoteModal() {
       const select = document.getElementById("importTargetSupplier");
-      select.innerHTML = suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
+      select.innerHTML = window.suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
       openModal("modalImportQuote");
     }
 
-    // Tab Switching
     function switchBuyerTab(tabName) {
-      activeBuyerTab = tabName;
+      window.activeBuyerTab = tabName;
 
       const tabReq = document.getElementById("buyerTabRequirements");
       const tabComp = document.getElementById("buyerTabComparison");
@@ -953,22 +1106,21 @@
       }
     }
 
-    // Buyer Dashboard & Metrics
-    function renderBuyerDashboard() {
-      document.getElementById("statTotalItems").innerText = requirements.length;
-      document.getElementById("tabCountReq").innerText = requirements.length;
+    window.renderBuyerDashboard = function() {
+      document.getElementById("statTotalItems").innerText = window.requirements.length;
+      document.getElementById("tabCountReq").innerText = window.requirements.length;
       const roomLbl = document.getElementById("lblRoomId");
-      if (roomLbl) roomLbl.innerText = currentRfqId;
+      if (roomLbl) roomLbl.innerText = window.currentRfqId;
 
       let quotedSuppliers = new Set();
       let maxDiscountFound = 0;
       let totalL1Discount = 0;
       let itemsWithBids = 0;
 
-      requirements.forEach(med => {
+      window.requirements.forEach(med => {
         let bestItemDisc = 0;
-        suppliers.forEach(sup => {
-          const supQ = quotes[sup.id]?.[med.id];
+        window.suppliers.forEach(sup => {
+          const supQ = window.quotes[sup.id]?.[med.id];
           if (supQ && Number(supQ.disc) > 0) {
             quotedSuppliers.add(sup.id);
             const discNum = Number(supQ.disc);
@@ -982,21 +1134,20 @@
         }
       });
 
-      document.getElementById("statSuppliersQuoted").innerText = `${quotedSuppliers.size} / ${suppliers.length}`;
+      document.getElementById("statSuppliersQuoted").innerText = `${quotedSuppliers.size} / ${window.suppliers.length}`;
       document.getElementById("statMaxDiscount").innerText = `${maxDiscountFound}%`;
       const avgDisc = itemsWithBids > 0 ? (totalL1Discount / itemsWithBids).toFixed(1) : 0;
       document.getElementById("statAvgDiscount").innerText = `${avgDisc}%`;
 
       renderRequirementsTable();
-    }
+    };
 
-    // Requirements Table Rendering (Paginated for 1600+ items)
     function renderRequirementsTable() {
       const tbody = document.getElementById("requirementsTableBody");
       tbody.innerHTML = "";
 
       const query = (document.getElementById("searchMedicine")?.value || "").toLowerCase().trim();
-      const filtered = requirements.filter(m => 
+      const filtered = window.requirements.filter(m => 
         (m.name || "").toLowerCase().includes(query) || 
         (m.company || "").toLowerCase().includes(query)
       );
@@ -1033,8 +1184,8 @@
 
       pageSlice.forEach((med, idx) => {
         let bidCount = 0;
-        suppliers.forEach(s => {
-          if (quotes[s.id]?.[med.id]?.disc > 0) bidCount++;
+        window.suppliers.forEach(s => {
+          if (window.quotes[s.id]?.[med.id]?.disc > 0) bidCount++;
         });
 
         const tr = document.createElement("tr");
@@ -1078,15 +1229,14 @@
     }
 
     function deleteRequirementItem(id) {
-      requirements = requirements.filter(m => m.id !== id);
-      saveState();
-      renderBuyerDashboard();
-      pushDataToCloud(false);
-      showToast("Medicine requirement removed");
+      window.requirements = window.requirements.filter(m => m.id !== id);
+      window.saveState();
+      window.renderBuyerDashboard();
+      if (typeof window.pushCatalogToFirestore === 'function') window.pushCatalogToFirestore(false);
+      window.showToast("Medicine requirement removed");
     }
 
-    // Comparison Matrix Rendering
-    function renderComparisonMatrix() {
+    window.renderComparisonMatrix = function() {
       const headerRow = document.getElementById("comparisonHeaderRow");
       const tbody = document.getElementById("comparisonTableBody");
 
@@ -1096,7 +1246,7 @@
         <th class="px-4 py-3.5 text-right bg-emerald-950 text-emerald-300 border-l border-emerald-800">Best Discount (L1)</th>
       `;
 
-      suppliers.forEach(s => {
+      window.suppliers.forEach(s => {
         const th = document.createElement("th");
         th.className = "px-4 py-3.5 text-center text-xs";
         th.innerHTML = `
@@ -1107,10 +1257,10 @@
       });
 
       tbody.innerHTML = "";
-      const displayList = requirements.slice(0, 200);
+      const displayList = window.requirements.slice(0, 200);
 
       if (displayList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${3 + suppliers.length}" class="text-center py-10 text-slate-400">No items available to compare.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${3 + window.suppliers.length}" class="text-center py-10 text-slate-400">No items available to compare.</td></tr>`;
         return;
       }
 
@@ -1120,8 +1270,8 @@
         let bestDisc = -1;
         let bestSupId = null;
 
-        suppliers.forEach(s => {
-          const d = Number(quotes[s.id]?.[med.id]?.disc || 0);
+        window.suppliers.forEach(s => {
+          const d = Number(window.quotes[s.id]?.[med.id]?.disc || 0);
           if (d > bestDisc && d > 0) {
             bestDisc = d;
             bestSupId = s.id;
@@ -1133,7 +1283,7 @@
 
         let bestSupplierName = "No Bids";
         if (bestSupId) {
-          const found = suppliers.find(s => s.id === bestSupId);
+          const found = window.suppliers.find(s => s.id === bestSupId);
           if (found) bestSupplierName = found.name;
         }
 
@@ -1155,8 +1305,8 @@
           </td>
         `;
 
-        suppliers.forEach(s => {
-          const q = quotes[s.id]?.[med.id];
+        window.suppliers.forEach(s => {
+          const q = window.quotes[s.id]?.[med.id];
           const d = Number(q?.disc || 0);
           const isL1 = (bestSupId === s.id && bestDisc > 0);
 
@@ -1176,31 +1326,30 @@
 
       tbody.appendChild(fragment);
 
-      if (requirements.length > 200) {
+      if (window.requirements.length > 200) {
         const trMore = document.createElement("tr");
         trMore.innerHTML = `
-          <td colspan="${3 + suppliers.length}" class="p-3 text-center bg-slate-50 text-xs text-slate-500 font-semibold border-t">
-            Showing top 200 items in comparative view for optimal performance. (Use Split PO tab to export full orders for all ${requirements.length} items).
+          <td colspan="${3 + window.suppliers.length}" class="p-3 text-center bg-slate-50 text-xs text-slate-500 font-semibold border-t">
+            Showing top 200 items in comparative view for optimal speed. (Split PO tab includes all ${window.requirements.length} items).
           </td>
         `;
         tbody.appendChild(trMore);
       }
-    }
+    };
 
-    // Split Purchase Orders
-    function renderSupplierPOs() {
+    window.renderSupplierPOs = function() {
       const container = document.getElementById("poSupplierCardsContainer");
       container.innerHTML = "";
 
       const wonBySupplier = {};
-      suppliers.forEach(s => { wonBySupplier[s.id] = []; });
+      window.suppliers.forEach(s => { wonBySupplier[s.id] = []; });
 
-      requirements.forEach(med => {
+      window.requirements.forEach(med => {
         let bestDisc = -1;
         let bestSupId = null;
 
-        suppliers.forEach(s => {
-          const d = Number(quotes[s.id]?.[med.id]?.disc || 0);
+        window.suppliers.forEach(s => {
+          const d = Number(window.quotes[s.id]?.[med.id]?.disc || 0);
           if (d > bestDisc && d > 0) {
             bestDisc = d;
             bestSupId = s.id;
@@ -1211,12 +1360,12 @@
           wonBySupplier[bestSupId].push({
             ...med,
             wonDiscount: bestDisc,
-            remarks: quotes[bestSupId][med.id]?.remarks || ""
+            remarks: window.quotes[bestSupId][med.id]?.remarks || ""
           });
         }
       });
 
-      suppliers.forEach(sup => {
+      window.suppliers.forEach(sup => {
         const wonItems = wonBySupplier[sup.id] || [];
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between";
@@ -1270,20 +1419,20 @@
 
         container.appendChild(card);
       });
-    }
+    };
 
     function printPO(supId, poNumber) {
-      const sup = suppliers.find(s => s.id === supId);
+      const sup = window.suppliers.find(s => s.id === supId);
       if (!sup) return;
 
       const printDiv = document.getElementById("printContainer");
       const wonItems = [];
 
-      requirements.forEach(med => {
+      window.requirements.forEach(med => {
         let bestDisc = -1;
         let bestSupId = null;
-        suppliers.forEach(s => {
-          const d = Number(quotes[s.id]?.[med.id]?.disc || 0);
+        window.suppliers.forEach(s => {
+          const d = Number(window.quotes[s.id]?.[med.id]?.disc || 0);
           if (d > bestDisc && d > 0) {
             bestDisc = d;
             bestSupId = s.id;
@@ -1349,7 +1498,7 @@
       const pack = sanitizeText(document.getElementById("medPack").value) || "Standard Pack";
       const qty = parseInt(document.getElementById("medQty").value, 10) || 1;
 
-      requirements.push({
+      window.requirements.push({
         id: `med-${Date.now()}-${Math.floor(Math.random()*1000)}`,
         name,
         company,
@@ -1357,15 +1506,14 @@
         qty
       });
 
-      saveState();
+      window.saveState();
       closeModal("modalAddMedicine");
       document.getElementById("addMedForm").reset();
-      renderBuyerDashboard();
-      pushDataToCloud(false);
-      showToast("Medicine requirement added!");
+      window.renderBuyerDashboard();
+      if (typeof window.pushCatalogToFirestore === 'function') window.pushCatalogToFirestore(false);
+      window.showToast("Medicine requirement added!");
     }
 
-    // Excel & CSV File Import
     function handleExcelFileSelect(e) {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -1379,7 +1527,7 @@
           const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
           if (!jsonRows || jsonRows.length === 0) {
-            showToast("Empty file uploaded", "error");
+            window.showToast("Empty file uploaded", "error");
             return;
           }
 
@@ -1418,10 +1566,10 @@
 
           document.getElementById("uploadPreviewContainer").classList.remove("hidden");
           document.getElementById("btnConfirmImport").disabled = false;
-          showToast(`Found ${pendingUploadList.length} medicines in file!`);
+          window.showToast(`Found ${pendingUploadList.length} medicines in file!`);
         } catch (err) {
           console.error(err);
-          showToast("Error reading file format", "error");
+          window.showToast("Error reading file format", "error");
         }
       };
       reader.readAsArrayBuffer(file);
@@ -1432,36 +1580,37 @@
 
       const replace = document.getElementById("chkReplaceExisting").checked;
       if (replace) {
-        requirements = pendingUploadList;
-        quotes = {};
+        window.requirements = pendingUploadList;
+        window.quotes = {};
       } else {
-        requirements = requirements.concat(pendingUploadList);
+        window.requirements = window.requirements.concat(pendingUploadList);
       }
 
-      saveState();
+      window.saveState();
       closeModal("modalUpload");
       pendingUploadList = [];
       document.getElementById("uploadPreviewContainer").classList.add("hidden");
       document.getElementById("excelFileInput").value = "";
       reqCurrentPage = 1;
-      renderBuyerDashboard();
+      window.renderBuyerDashboard();
 
-      // Automatically sync new catalog to cloud room for all suppliers
-      pushDataToCloud(true);
-      showToast(`Successfully imported ${requirements.length} medicines!`);
+      // Automatically sync new catalog to Firebase for all suppliers
+      if (typeof window.pushCatalogToFirestore === 'function') {
+        window.pushCatalogToFirestore(true);
+      }
+      window.showToast(`Successfully imported ${window.requirements.length} medicines!`);
     }
 
-    // Manual WhatsApp Quote Parser
     function processImportedQuote() {
       const supId = document.getElementById("importTargetSupplier").value;
       const text = document.getElementById("importQuoteText").value.trim();
 
       if (!text) {
-        showToast("Please paste the WhatsApp quotation text", "error");
+        window.showToast("Please paste the WhatsApp quotation text", "error");
         return;
       }
 
-      quotes[supId] = quotes[supId] || {};
+      window.quotes[supId] = window.quotes[supId] || {};
       let updatedCount = 0;
 
       const lines = text.split("\n");
@@ -1471,10 +1620,10 @@
           const discount = parseFloat(percentMatch[1]);
           const lineClean = line.toLowerCase();
 
-          for (let m of requirements) {
+          for (let m of window.requirements) {
             const medWord = m.name.toLowerCase().split(" ")[0];
             if (lineClean.includes(medWord)) {
-              quotes[supId][m.id] = { disc: discount, status: "Available", remarks: "Manual Import" };
+              window.quotes[supId][m.id] = { disc: discount, status: "Available", remarks: "Manual Import" };
               updatedCount++;
               break;
             }
@@ -1482,15 +1631,14 @@
         }
       });
 
-      saveState();
+      window.saveState();
       closeModal("modalImportQuote");
       document.getElementById("importQuoteText").value = "";
-      renderBuyerDashboard();
-      pushDataToCloud(false);
-      showToast(`Imported ${updatedCount} bids successfully!`);
+      window.renderBuyerDashboard();
+      if (typeof window.pushCatalogToFirestore === 'function') window.pushCatalogToFirestore(false);
+      window.showToast(`Imported ${updatedCount} bids successfully!`);
     }
 
-    // Backup Download
     function downloadStandaloneFile() {
       const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
       const blob = new Blob([htmlContent], { type: "text/html" });
@@ -1500,16 +1648,16 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast("App backup downloaded!");
+      window.showToast("App backup downloaded!");
     }
 
     function exportToCSV() {
       let csv = "Medicine Name,Company,Pack Size,Quantity,Best Discount (L1),Winning Supplier\n";
-      requirements.forEach(m => {
+      window.requirements.forEach(m => {
         let bestDisc = 0;
         let bestSup = "None";
-        suppliers.forEach(s => {
-          const d = Number(quotes[s.id]?.[med.id]?.disc || 0);
+        window.suppliers.forEach(s => {
+          const d = Number(window.quotes[s.id]?.[m.id]?.disc || 0);
           if (d > bestDisc) {
             bestDisc = d;
             bestSup = s.name;
@@ -1521,32 +1669,20 @@
       const blob = new Blob([csv], { type: "text/csv" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `PharmaQuote_Comparison_${requirements.length}_Items.csv`;
+      a.download = `PharmaQuote_Comparison_${window.requirements.length}_Items.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     }
 
     function copyToClipboard(text) {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-          showToast("Link copied to clipboard!");
-        }).catch(() => {
-          fallbackCopyText(text);
-        });
-      } else {
-        fallbackCopyText(text);
-      }
-    }
-
-    function fallbackCopyText(text) {
       const temp = document.createElement("textarea");
       temp.value = text;
       document.body.appendChild(temp);
       temp.select();
       document.execCommand("copy");
       document.body.removeChild(temp);
-      showToast("Link copied to clipboard!");
+      window.showToast("Link copied to clipboard!");
     }
 
     function addNewSupplierPrompt() {
@@ -1555,64 +1691,40 @@
       const city = prompt("Enter City:", "Ahmedabad") || "";
       const contact = prompt("Enter WhatsApp / Mobile Number:", "") || "";
 
-      suppliers.push({
+      window.suppliers.push({
         id: `sup-${Date.now()}`,
         name: sanitizeText(name),
         city: sanitizeText(city),
         contact: sanitizeText(contact)
       });
 
-      saveState();
+      window.saveState();
       openShareModal();
-      pushDataToCloud(false);
-      showToast("Supplier added successfully!");
+      if (typeof window.pushCatalogToFirestore === 'function') window.pushCatalogToFirestore(false);
+      window.showToast("Supplier added successfully!");
     }
 
     function updateSupplierQuote(medId, field, val) {
-      quotes[currentSupplierId] = quotes[currentSupplierId] || {};
-      quotes[currentSupplierId][medId] = quotes[currentSupplierId][medId] || { disc: 0, status: "Available", remarks: "" };
+      window.quotes[window.currentSupplierId] = window.quotes[window.currentSupplierId] || {};
+      window.quotes[window.currentSupplierId][medId] = window.quotes[window.currentSupplierId][medId] || { disc: 0, status: "Available", remarks: "" };
       
       if (field === 'disc') {
-        quotes[currentSupplierId][medId].disc = parseFloat(val) || 0;
+        window.quotes[window.currentSupplierId][medId].disc = parseFloat(val) || 0;
       } else {
-        quotes[currentSupplierId][medId][field] = val;
+        window.quotes[window.currentSupplierId][medId][field] = val;
       }
-      saveState();
+      window.saveState();
 
       let quotedCount = 0;
-      requirements.forEach(m => {
-        if (quotes[currentSupplierId]?.[m.id]?.disc > 0) quotedCount++;
+      window.requirements.forEach(m => {
+        if (window.quotes[window.currentSupplierId]?.[m.id]?.disc > 0) quotedCount++;
       });
-      document.getElementById("supSummaryCount").innerText = `${quotedCount} / ${requirements.length}`;
+      document.getElementById("supSummaryCount").innerText = `${quotedCount} / ${window.requirements.length}`;
     }
 
-    function sendQuotationViaWhatsApp() {
-      const supQuotes = quotes[currentSupplierId] || {};
-      let quotedLines = [];
-
-      requirements.forEach(m => {
-        const q = supQuotes[m.id];
-        if (q && q.disc > 0) {
-          quotedLines.push(`${m.name}: ${q.disc}% (${q.status})`);
-        }
-      });
-
-      if (quotedLines.length === 0) {
-        showToast("Please enter at least one discount before submitting", "error");
-        return;
-      }
-
-      let text = `*QUOTATION FROM: ${document.getElementById("hdrSupName").innerText}*\nTotal Quoted Medicines: ${quotedLines.length}\n\n`;
-      text += quotedLines.join("\n");
-
-      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-      window.open(waUrl, "_blank");
-    }
-
-    // Lockdown Supplier View
     function enforceSupplierLockdown(supId, supName) {
-      isSupplierMode = true;
-      currentSupplierId = supId;
+      window.isSupplierMode = true;
+      window.currentSupplierId = supId;
 
       const buyerHeader = document.getElementById("buyerHeader");
       const buyerPortal = document.getElementById("buyerPortal");
@@ -1631,16 +1743,15 @@
       renderSupplierPortal();
     }
 
-    // Paginated Supplier Portal
-    function renderSupplierPortal() {
-      document.getElementById("supCatalogCount").innerText = `${requirements.length} Items`;
+    window.renderSupplierPortal = function() {
+      document.getElementById("supCatalogCount").innerText = `${window.requirements.length} Items`;
 
       const tbody = document.getElementById("supplierQuoteTableBody");
       if (!tbody) return;
       tbody.innerHTML = "";
 
       const filterVal = (document.getElementById("supplierSearchInput")?.value || "").toLowerCase().trim();
-      const filteredReqs = requirements.filter(m => 
+      const filteredReqs = window.requirements.filter(m => 
         (m.name || "").toLowerCase().includes(filterVal) || 
         (m.company || "").toLowerCase().includes(filterVal)
       );
@@ -1665,8 +1776,8 @@
         tbody.innerHTML = `
           <tr>
             <td colspan="7" class="text-center py-10 text-slate-400">
-              <i class="fa-solid fa-arrows-rotate fa-spin text-3xl mb-2 block text-blue-500"></i>
-              Syncing medicines from chemist... Click <strong>"Reload Catalog"</strong> at the top right if this takes a moment.
+              <i class="fa-solid fa-spinner fa-spin text-3xl mb-2 block text-blue-500"></i>
+              Streaming medicine requirements live from chemist...
             </td>
           </tr>
         `;
@@ -1674,7 +1785,7 @@
       }
 
       pageSlice.forEach((med, idx) => {
-        const supQuotes = quotes[currentSupplierId] = quotes[currentSupplierId] || {};
+        const supQuotes = window.quotes[window.currentSupplierId] = window.quotes[window.currentSupplierId] || {};
         const q = supQuotes[med.id] || { disc: 0, status: "Available", remarks: "" };
 
         const tr = document.createElement("tr");
@@ -1708,11 +1819,11 @@
       });
 
       let quotedCount = 0;
-      requirements.forEach(m => {
-        if (quotes[currentSupplierId] && quotes[currentSupplierId][m.id] && quotes[currentSupplierId][m.id].disc > 0) quotedCount++;
+      window.requirements.forEach(m => {
+        if (window.quotes[window.currentSupplierId] && window.quotes[window.currentSupplierId][m.id] && window.quotes[window.currentSupplierId][m.id].disc > 0) quotedCount++;
       });
-      document.getElementById("supSummaryCount").innerText = `${quotedCount} / ${requirements.length}`;
-    }
+      document.getElementById("supSummaryCount").innerText = `${quotedCount} / ${window.requirements.length}`;
+    };
 
     function changeSupPage(delta) {
       supCurrentPage += delta;
@@ -1724,18 +1835,17 @@
       renderSupplierPortal();
     }
 
-    // Share Modal Generator
     function openShareModal() {
       const container = document.getElementById("supplierLinksList");
-      document.getElementById("modalCatalogCount").innerText = requirements.length;
+      document.getElementById("modalCatalogCount").innerText = window.requirements.length;
       container.innerHTML = "";
 
       const currentBaseUrl = window.location.origin + window.location.pathname;
 
-      suppliers.forEach(sup => {
-        const supplierDirectLink = `${currentBaseUrl}#rfq=${encodeURIComponent(currentRfqId)}&sup=${encodeURIComponent(sup.id)}&name=${encodeURIComponent(sup.name)}`;
+      window.suppliers.forEach(sup => {
+        const supplierDirectLink = `${currentBaseUrl}#rfq=${encodeURIComponent(window.currentRfqId)}&sup=${encodeURIComponent(sup.id)}&name=${encodeURIComponent(sup.name)}`;
 
-        const whatsappMsg = `Hello ${sup.name},\n\nPlease quote your maximum Discount % for our current medicine requirements (${requirements.length} items).\n\nClick link to quote directly:\n${supplierDirectLink}\n\n(Auto-syncs directly to our portal. 100% confidential).`;
+        const whatsappMsg = `Hello ${sup.name},\n\nPlease quote your maximum Discount % for our current medicine requirements (${window.requirements.length} items).\n\nClick link to quote directly:\n${supplierDirectLink}\n\n(Auto-syncs directly to our portal. 100% confidential).`;
         const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMsg)}`;
 
         const item = document.createElement("div");
@@ -1765,25 +1875,20 @@
       openModal("modalShare");
     }
 
-    // Incoming URL Inspector
     function checkIncomingLink() {
       const hash = window.location.hash;
       if (!hash) return false;
 
       try {
         const hashParams = new URLSearchParams(hash.substring(1));
-        
         if (hashParams.has("sup")) {
           const sId = hashParams.get("sup");
           const sName = hashParams.get("name") || "Distributor";
           if (hashParams.has("rfq")) {
-            currentRfqId = hashParams.get("rfq");
-            saveState();
+            window.currentRfqId = hashParams.get("rfq");
+            window.saveState();
           }
           enforceSupplierLockdown(sId, sName);
-
-          // Fetch full medicine requirements from cloud relay
-          fetchCloudData(false);
           return true;
         }
       } catch (err) {
@@ -1792,21 +1897,14 @@
       return false;
     }
 
-    // App Initialization
-    window.onload = function() {
+    // App Startup
+    window.addEventListener("DOMContentLoaded", function() {
       loadState();
-      const lockedInSupplier = checkIncomingLink();
-      if (!lockedInSupplier) {
-        renderBuyerDashboard();
-        // Start background polling to auto-detect supplier bids
-        startAutoCloudPolling();
-        // Auto pull latest cloud state
-        fetchCloudData(false);
-      } else {
-        // Supplier background refresh
-        startAutoCloudPolling();
+      const isSupplier = checkIncomingLink();
+      if (!isSupplier) {
+        window.renderBuyerDashboard();
       }
-    };
+    });
   </script>
 </body>
 </html>
