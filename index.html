@@ -936,3 +936,23 @@
           quotes: AppState.quotes
         }));
       } catch (e) {}
+    }
+
+    function loadLocalBackup() {
+      try {
+        const raw = localStorage.getItem("pharmaquote_backup");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.requirements) AppState.requirements = parsed.requirements;
+          if (parsed.quotes) AppState.quotes = parsed.quotes;
+        }
+      } catch (e) {}
+    }
+
+    function escapeHtml(text) {
+      if (!text) return "";
+      return String(text).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+    }
+  </script>
+</body>
+</html>
