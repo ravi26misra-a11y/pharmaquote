@@ -8,10 +8,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  <!-- Firebase Modular SDK -->
+  <!-- Firebase Direct Modular SDK (No Auth Required) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -26,10 +25,9 @@
 
     try {
       const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
       const db = getFirestore(app);
-      window._fb = { app, auth, db, doc, setDoc, getDoc, onSnapshot, signInAnonymously };
-      console.log("Firebase initialized");
+      window._fb = { app, db, doc, setDoc, getDoc, onSnapshot };
+      console.log("Firebase direct connection initialized");
     } catch (err) {
       console.error("Firebase init failed:", err);
     }
@@ -81,7 +79,7 @@
           <div>
             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Required Items</p>
             <h3 class="text-2xl font-black text-slate-800 mt-1" id="statTotalItems">0</h3>
-            <p class="text-xs text-teal-600 mt-1 font-medium"><i class="fa-solid fa-pills mr-1"></i>Active in RFQ</p>
+            <p class="text-xs text-teal-600 mt-1 font-medium"><i class="fa-solid fa-pills mr-1"></i>Active in Catalog</p>
           </div>
           <div class="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center text-xl">
             <i class="fa-solid fa-list-check"></i>
@@ -122,7 +120,7 @@
         </div>
       </div>
 
-      <!-- Tabs -->
+      <!-- Navigation Tabs -->
       <div class="flex border-b border-slate-200 space-x-6 text-sm font-bold">
         <button onclick="switchBuyerTab('tabReqs')" id="navTabReqs" class="pb-3 border-b-2 border-teal-600 text-teal-600 flex items-center space-x-2">
           <i class="fa-solid fa-clipboard-list"></i>
@@ -138,7 +136,7 @@
         </button>
       </div>
 
-      <!-- Tab 1: Requirements -->
+      <!-- Tab 1: Requirements Listing -->
       <div id="tabContentReqs" class="space-y-4">
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
           <div class="relative w-full md:w-96">
@@ -187,7 +185,7 @@
         </div>
       </div>
 
-      <!-- Tab 2: Comparison -->
+      <!-- Tab 2: Comparison Matrix -->
       <div id="tabContentMatrix" class="hidden space-y-4">
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
           <table class="w-full text-left text-sm border-collapse">
@@ -203,7 +201,7 @@
       </div>
     </section>
 
-    <!-- 2. SUPPLIER PORTAL -->
+    <!-- 2. ISOLATED SUPPLIER PORTAL -->
     <section id="portalSupplier" class="hidden max-w-4xl mx-auto space-y-6">
       <div class="bg-gradient-to-r from-teal-700 to-emerald-700 text-white p-6 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
@@ -254,8 +252,41 @@
       <div onclick="document.getElementById('excelFileInput').click()" class="border-2 border-dashed border-teal-300 hover:border-teal-500 rounded-2xl p-8 text-center cursor-pointer bg-teal-50/50 hover:bg-teal-50 transition">
         <i class="fa-solid fa-file-excel text-4xl text-teal-600 mb-2"></i>
         <p class="text-sm font-bold text-slate-700">Click to select Excel / CSV file</p>
-        <p class="text-xs text-slate-400 mt-1">Reads exact quantities and catalogs with 1600+ items</p>
-        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelUpload(event)">
+        <p class="text-xs text-slate-400 mt-1">Automatic column detection & live preview</p>
+        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="previewExcelUpload(event)">
+      </div>
+    </div>
+  </div>
+
+  <!-- Column Mapping Modal (Guarantees exact quantity match) -->
+  <div id="modalMapping" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-black text-lg text-slate-900">Confirm Excel Columns</h3>
+        <button onclick="closeModal('modalMapping')" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+      <p class="text-xs text-slate-500">Verify which columns match Medicine Name and Required Quantity:</p>
+
+      <div class="grid grid-cols-2 gap-3 text-xs font-bold">
+        <div>
+          <label class="block text-slate-600 mb-1">Medicine Name Column:</label>
+          <select id="mapColName" onchange="updateMappingPreview()" class="w-full p-2 border rounded-xl bg-slate-50 outline-none"></select>
+        </div>
+        <div>
+          <label class="block text-slate-600 mb-1">Quantity Column:</label>
+          <select id="mapColQty" onchange="updateMappingPreview()" class="w-full p-2 border rounded-xl bg-slate-50 outline-none"></select>
+        </div>
+      </div>
+
+      <!-- Live 3-Row Preview -->
+      <div class="bg-slate-50 rounded-2xl p-3 border border-slate-200">
+        <p class="text-[11px] font-black uppercase text-slate-400 mb-2 tracking-wider">Live Preview (First 3 Rows):</p>
+        <div id="mappingPreviewBox" class="text-xs space-y-1.5 divide-y divide-slate-200"></div>
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal('modalMapping')" class="px-4 py-2 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">Cancel</button>
+        <button onclick="applyMappingAndImport()" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow transition">Confirm & Import Catalog</button>
       </div>
     </div>
   </div>
@@ -321,7 +352,7 @@
       searchQuery: ""
     };
 
-    const CHUNK_SIZE = 300;
+    let tempRawExcelRows = [];
 
     window.addEventListener("DOMContentLoaded", async () => {
       loadLocalBackup();
@@ -352,63 +383,56 @@
       }
     }
 
+    // Direct Firestore Listeners (Zero-Auth Blocker)
     async function initFirebaseSync() {
       const checkFbInterval = setInterval(async () => {
         if (window._fb && window._fb.db) {
           clearInterval(checkFbInterval);
-          const { db, auth, doc, getDoc, onSnapshot, signInAnonymously } = window._fb;
+          const { db, doc, onSnapshot } = window._fb;
 
           try {
-            await signInAnonymously(auth);
             updateCloudBadge("Firebase Live", true);
 
-            // Listen to Index Document
-            const indexRef = doc(db, "rfqs", AppState.rfqId);
-            onSnapshot(indexRef, async (snap) => {
-              if (snap.exists()) {
-                const data = snap.data();
-                const totalChunks = data.totalChunks || 0;
-                
-                if (totalChunks > 0) {
-                  let allReqs = [];
-                  for (let i = 0; i < totalChunks; i++) {
-                    const cRef = doc(db, "rfq_chunks", `${AppState.rfqId}_chunk_${i}`);
-                    const cSnap = await getDoc(cRef);
-                    if (cSnap.exists()) {
-                      allReqs = allReqs.concat(cSnap.data().items || []);
-                    }
-                  }
-                  if (allReqs.length > 0) {
-                    AppState.requirements = allReqs;
-                    saveLocalBackup();
-                    renderAll();
-                  }
+            // Listen to Catalog Document
+            const rfqRef = doc(db, "rfqs", AppState.rfqId);
+            onSnapshot(rfqRef, (docSnap) => {
+              if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.requirements && Array.isArray(data.requirements) && data.requirements.length > 0) {
+                  AppState.requirements = data.requirements;
+                  if (data.suppliers) AppState.suppliers = data.suppliers;
+                  saveLocalBackup();
+                  renderAll();
                 }
               }
+            }, (error) => {
+              console.error("Firestore Catalog listener error:", error);
             });
 
-            // Listen to Quotations
+            // Listen to Quotations Document
             const quotesRef = doc(db, "rfq_quotes", AppState.rfqId);
-            onSnapshot(quotesRef, (qSnap) => {
-              if (qSnap.exists()) {
-                AppState.quotes = qSnap.data().quotes || {};
+            onSnapshot(quotesRef, (docSnap) => {
+              if (docSnap.exists()) {
+                AppState.quotes = docSnap.data().quotes || {};
                 saveLocalBackup();
                 renderAll();
                 if (AppState.userRole === "buyer") {
-                  showToast("New supplier quotation auto-synced!", "fa-solid fa-cloud-arrow-down");
+                  showToast("New supplier quote auto-synced!", "fa-solid fa-cloud-arrow-down");
                 }
               }
+            }, (error) => {
+              console.error("Firestore Quotes listener error:", error);
             });
 
           } catch (err) {
-            console.error("Firebase sync error:", err);
-            updateCloudBadge("Firebase Error", false);
+            console.error("Firebase connection error:", err);
+            updateCloudBadge("Firebase Offline", false);
           }
         }
       }, 300);
     }
 
-    // Chunked Upload to bypass 1MB Firestore Limit
+    // Sync to Firestore
     async function syncToCloud(showNotification = false) {
       if (!window._fb || !window._fb.db) {
         showToast("Firebase connecting...", "fa-solid fa-spinner fa-spin");
@@ -416,24 +440,13 @@
       }
 
       const { db, doc, setDoc } = window._fb;
-
       try {
         updateCloudBadge("Syncing...", true);
         showToast("Saving to cloud...", "fa-solid fa-spinner fa-spin");
 
-        const totalChunks = Math.ceil(AppState.requirements.length / CHUNK_SIZE);
-
-        for (let i = 0; i < totalChunks; i++) {
-          const chunkItems = AppState.requirements.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-          await setDoc(doc(db, "rfq_chunks", `${AppState.rfqId}_chunk_${i}`), {
-            chunkIndex: i,
-            items: chunkItems
-          });
-        }
-
         await setDoc(doc(db, "rfqs", AppState.rfqId), {
-          totalChunks: totalChunks,
-          totalItems: AppState.requirements.length,
+          requirements: AppState.requirements,
+          suppliers: AppState.suppliers,
           lastUpdated: new Date().toISOString()
         });
 
@@ -443,7 +456,7 @@
         });
 
         updateCloudBadge("Firebase Live", true);
-        if (showNotification) showToast("All 1600+ items synced to cloud successfully!", "fa-solid fa-circle-check");
+        if (showNotification) showToast("All items synced to cloud successfully!", "fa-solid fa-circle-check");
       } catch (err) {
         console.error("Cloud push failed:", err);
         updateCloudBadge("Sync Failed", false);
@@ -451,12 +464,10 @@
       }
     }
 
-    // Fixed Excel Quantity & Column Parser
-    function handleExcelUpload(event) {
+    // Step 1: Read Excel and Open Mapping Dialog
+    function previewExcelUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
-
-      showToast("Reading " + file.name + "...", "fa-solid fa-spinner fa-spin");
 
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -464,82 +475,116 @@
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+          tempRawExcelRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-          if (rows.length < 2) {
-            alert("Uploaded sheet is empty.");
+          if (tempRawExcelRows.length < 2) {
+            alert("Uploaded file is empty.");
             return;
           }
 
-          let nameIdx = -1, compIdx = -1, packIdx = -1, qtyIdx = -1;
-          const header = rows[0].map(h => String(h || "").trim().toLowerCase());
+          const header = tempRawExcelRows[0].map((h, i) => String(h || `Column ${i + 1}`).trim());
+          const nameSelect = document.getElementById("mapColName");
+          const qtySelect = document.getElementById("mapColQty");
+
+          nameSelect.innerHTML = "";
+          qtySelect.innerHTML = "";
+
+          let defaultNameIdx = 0;
+          let defaultQtyIdx = header.length - 1;
 
           header.forEach((col, idx) => {
-            if (col.includes("item") || col.includes("product") || col.includes("medicine") || col.includes("particular") || col.includes("name") || col.includes("description")) {
-              if (nameIdx === -1) nameIdx = idx;
-            } else if (col.includes("comp") || col.includes("mfr") || col.includes("brand")) {
-              compIdx = idx;
-            } else if (col.includes("pack") || col.includes("unit") || col.includes("size")) {
-              packIdx = idx;
-            } else if (col.includes("qty") || col.includes("quantity") || col.includes("order") || col.includes("req") || col.includes("strip") || col.includes("box")) {
-              qtyIdx = idx;
+            const lower = col.toLowerCase();
+            const opt1 = new Option(`${col} (Col ${idx + 1})`, idx);
+            const opt2 = new Option(`${col} (Col ${idx + 1})`, idx);
+            nameSelect.add(opt1);
+            qtySelect.add(opt2);
+
+            if (lower.includes("name") || lower.includes("item") || lower.includes("product") || lower.includes("particular")) {
+              defaultNameIdx = idx;
+            }
+            if (lower.includes("qty") || lower.includes("quantity") || lower.includes("order") || lower.includes("req") || lower.includes("strip") || lower.includes("box")) {
+              defaultQtyIdx = idx;
             }
           });
 
-          if (nameIdx === -1) nameIdx = 0;
+          nameSelect.value = defaultNameIdx;
+          qtySelect.value = defaultQtyIdx;
 
-          // If Qty column not found by header, find first column with numbers
-          if (qtyIdx === -1) {
-            for (let c = 0; c < rows[1].length; c++) {
-              if (c !== nameIdx && !isNaN(parseFloat(rows[1][c])) && parseFloat(rows[1][c]) > 0) {
-                qtyIdx = c;
-                break;
-              }
-            }
-          }
-
-          const newItems = [];
-          for (let i = 1; i < rows.length; i++) {
-            const r = rows[i];
-            if (!r || r[nameIdx] === undefined || r[nameIdx] === null) continue;
-
-            const name = String(r[nameIdx]).trim().replace(/\uFFFD/g, '');
-            if (!name) continue;
-
-            const company = compIdx >= 0 && r[compIdx] ? String(r[compIdx]).trim() : "Standard Pharma";
-            const pack = packIdx >= 0 && r[packIdx] ? String(r[packIdx]).trim() : "Standard Pack";
-            
-            // Parse exact numeric quantity
-            let rawQty = qtyIdx >= 0 && r[qtyIdx] !== undefined ? String(r[qtyIdx]).replace(/[^0-9.]/g, '') : "";
-            let qty = parseFloat(rawQty);
-            if (isNaN(qty) || qty <= 0) qty = 1;
-
-            newItems.push({
-              id: "med-" + Date.now() + "-" + i,
-              name,
-              company,
-              pack,
-              qty: Math.round(qty)
-            });
-          }
-
-          if (newItems.length > 0) {
-            AppState.requirements = newItems;
-            AppState.currentPage = 1;
-            saveLocalBackup();
-            renderAll();
-            closeModal('modalUpload');
-            syncToCloud(true);
-          }
+          closeModal('modalUpload');
+          document.getElementById("modalMapping").classList.remove("hidden");
+          updateMappingPreview();
         } catch (err) {
           console.error("Excel parse error:", err);
-          alert("Error parsing file.");
+          alert("Error reading file.");
         }
       };
       reader.readAsArrayBuffer(file);
       event.target.value = "";
     }
 
+    // Step 2: Show Live Preview of parsed Medicine & Qty
+    function updateMappingPreview() {
+      const nameIdx = parseInt(document.getElementById("mapColName").value, 10);
+      const qtyIdx = parseInt(document.getElementById("mapColQty").value, 10);
+      const box = document.getElementById("mappingPreviewBox");
+      box.innerHTML = "";
+
+      for (let i = 1; i <= Math.min(3, tempRawExcelRows.length - 1); i++) {
+        const row = tempRawExcelRows[i];
+        if (!row) continue;
+
+        const medName = String(row[nameIdx] || "").trim();
+        const rawQty = String(row[qtyIdx] || "").replace(/[^0-9.]/g, '');
+        const qtyVal = parseFloat(rawQty) || 1;
+
+        const div = document.createElement("div");
+        div.className = "pt-1 flex items-center justify-between";
+        div.innerHTML = `
+          <span class="font-bold text-slate-800 truncate mr-2">${medName || '(Blank)'}</span>
+          <span class="font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Qty: ${Math.round(qtyVal)}</span>
+        `;
+        box.appendChild(div);
+      }
+    }
+
+    // Step 3: Apply Mapping and Save to Firebase
+    function applyMappingAndImport() {
+      const nameIdx = parseInt(document.getElementById("mapColName").value, 10);
+      const qtyIdx = parseInt(document.getElementById("mapColQty").value, 10);
+
+      const newItems = [];
+      for (let i = 1; i < tempRawExcelRows.length; i++) {
+        const r = tempRawExcelRows[i];
+        if (!r || r[nameIdx] === undefined || r[nameIdx] === null) continue;
+
+        const name = String(r[nameIdx]).trim().replace(/\uFFFD/g, '');
+        if (!name) continue;
+
+        const rawQty = String(r[qtyIdx] !== undefined ? r[qtyIdx] : "").replace(/[^0-9.]/g, '');
+        let qty = parseFloat(rawQty);
+        if (isNaN(qty) || qty <= 0) qty = 1;
+
+        newItems.push({
+          id: "med-" + Date.now() + "-" + i,
+          name,
+          company: "Standard Pharma",
+          pack: "Standard Pack",
+          qty: Math.round(qty)
+        });
+      }
+
+      if (newItems.length > 0) {
+        AppState.requirements = newItems;
+        AppState.currentPage = 1;
+        saveLocalBackup();
+        renderAll();
+        closeModal('modalMapping');
+        syncToCloud(true);
+        showToast(`Imported ${newItems.length} medicines with exact quantities!`, "fa-solid fa-circle-check");
+      }
+    }
+
+    // Submit Supplier Quotation
     async function submitSupplierQuotation() {
       const supId = AppState.currentSupplierId;
       if (!supId) return;
@@ -575,7 +620,7 @@
             quotes: AppState.quotes,
             lastUpdated: new Date().toISOString()
           });
-          alert("Quotation successfully submitted! Chemist dashboard has been updated in real-time.");
+          alert("Quotation successfully submitted! Chemist dashboard has been updated in real time.");
         } catch (err) {
           alert("Error submitting: " + err.message);
         }
@@ -947,6 +992,22 @@
           if (parsed.quotes) AppState.quotes = parsed.quotes;
         }
       } catch (e) {}
+    }
+
+    function saveSingleMedicine() {
+      const name = document.getElementById("addMedName").value.trim();
+      const company = document.getElementById("addMedCompany").value.trim() || "Standard Pharma";
+      const pack = document.getElementById("addMedPack").value.trim() || "Standard Pack";
+      const qty = parseInt(document.getElementById("addMedQty").value, 10);
+
+      if (!name) return alert("Enter medicine name");
+      if (isNaN(qty) || qty <= 0) return alert("Enter valid quantity");
+
+      AppState.requirements.unshift({ id: "med-" + Date.now(), name, company, pack, qty });
+      closeModal('modalAdd');
+      saveLocalBackup();
+      syncToCloud();
+      renderAll();
     }
 
     function escapeHtml(text) {
